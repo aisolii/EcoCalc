@@ -1,175 +1,192 @@
 <!doctype html>
-<html lang="ru">
+<html lang="kk">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EcoEsep — сдача вторсырья в Көкшетау</title>
-  <meta name="description" content="Калькулятор накопления и сдачи вторсырья: выручка, расходы на топливо, порог накопления и совместная сдача.">
+  <title>EcoEsep — қайталама шикізатты өткізу калькуляторы</title>
+  <meta name="description" content="Көкшетауда қайталама шикізатты жинау және өткізу калькуляторы: түсім, жанармай шығыны, жинақтау шегі және бірлесіп өткізу.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4b3a'/%3E%3Cpath d='M9 20c0-7 6-11 14-11 0 8-4 14-11 14-1 0-2 0-3-1l-2 3' stroke='%23d4f27a' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%2313804f'/%3E%3Cpath d='M8 22 L16 8 L24 22 Z' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap top__row">
-      <a class="brand" href="#">
-        <span class="brand__mark" aria-hidden="true"></span>
-        <span>EcoEsep</span>
-      </a>
-      <nav class="top__nav">
-        <a href="#calc">Калькулятор</a>
-        <a href="#compare">Сравнение</a>
-        <a href="#joint">Совместная сдача</a>
-        <a href="#method">Методика</a>
+  <header class="bar">
+    <div class="wrap bar__row">
+      <a class="mark" href="#top">EcoEsep</a>
+      <nav class="bar__nav" aria-label="Бөлімдер">
+        <a href="#input">Деректер</a>
+        <a href="#compare">Салыстыру</a>
+        <a href="#threshold">Жинақтау шегі</a>
+        <a href="#joint">Бірлесу</a>
+        <a href="#journal">Журнал</a>
+        <a href="#method">Әдістеме</a>
       </nav>
-      <button class="icon-btn" id="themeBtn" type="button" aria-label="Сменить тему">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
-      </button>
+      <button class="btn btn--quiet" type="button" id="printBtn">Хаттаманы басып шығару</button>
     </div>
   </header>
 
-  <main>
-    <section class="hero wrap">
-      <p class="eyebrow">Көкшетау · планировщик сдачи вторсырья</p>
-      <h1>Сколько принесёт вторсырьё —<br><em>и стоит ли ради него ехать</em></h1>
-      <p class="lead">Калькулятор помогает семье или школьному классу выбрать вариант сдачи с учётом массы, цен приёма и затрат на топливо. Он сравнивает денежный результат и дополнительный пробег — но не оценивает, какой способ «самый экологичный».</p>
-      <div class="hero__actions">
-        <button class="btn btn--primary" id="exampleBtn" type="button">Открыть учебный пример</button>
-        <a class="btn btn--ghost" href="#calc">Ввести свои данные</a>
+  <main id="top">
+    <section class="wrap intro">
+      <p class="kicker">EcoEsep · Көкшетау қаласы</p>
+      <h1>Қайталама шикізатты жинау және өткізу калькуляторы</h1>
+      <p class="intro__aim"><b>Мақсаты:</b> отбасына немесе мектеп сыныбына шикізаттың массасын, қабылдау бағасын және жанармай шығынын ескере отырып, қайталама шикізатты өткізудің нұсқасын таңдауға көмектесу.</p>
+      <div class="scope">
+        <div>
+          <h2>Есептейді</h2>
+          <ul>
+            <li>әр пункттегі түсімді</li>
+            <li>жанармай шығыны мен қосымша жүрісті</li>
+            <li>жинақтаудың шекті мөлшерін</li>
+            <li>жеке және ортақ сапардың нәтижесін</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Есептемейді</h2>
+          <ul>
+            <li>қай тәсіл экологиялық тұрғыдан тиімді екенін</li>
+            <li>уақыт пен күш шығынын</li>
+            <li>көлікке қызмет көрсету шығынын</li>
+          </ul>
+        </div>
       </div>
-      <div class="notice" id="demoNotice" role="note">
-        <strong>Условные данные.</strong> Пункты приёма и цены в демо-наборе вымышлены для проверки алгоритма. Перед использованием замените их проверенными сведениями в блоке «Г».
+      <div class="intro__actions">
+        <button class="btn btn--primary" id="exampleBtn" type="button">Оқу мысалын ашу</button>
+        <a class="btn" href="#input">Өз деректеріңізді енгізу</a>
       </div>
+      <p class="notice" id="demoNotice" role="note"><b>Шартты деректер.</b> Демо-жиынтықтағы қабылдау пункттері мен бағалар алгоритмді тексеру үшін ойдан алынған. Пайдаланар алдында оларды 4-бөлімде тексерілген деректермен ауыстырыңыз.</p>
     </section>
 
-    <section class="wrap layout" id="calc">
-      <div class="inputs">
-        <!-- Блок А -->
-        <article class="card" id="blockA">
-          <header class="card__head"><span class="step">А</span><h2>Кто собирает</h2></header>
-          <div class="seg" role="radiogroup" aria-label="Кто собирает" id="whoSeg">
-            <button type="button" role="radio" data-who="family">Семья</button>
-            <button type="button" role="radio" data-who="class">Класс</button>
-            <button type="button" role="radio" data-who="families">Несколько семей</button>
+    <section class="wrap layout" id="input">
+      <div class="form">
+        <fieldset class="block">
+          <legend><span class="no">1</span>Кім жинайды</legend>
+          <div class="seg" role="radiogroup" aria-label="Кім жинайды" id="whoSeg">
+            <button type="button" role="radio" data-who="family">Отбасы</button>
+            <button type="button" role="radio" data-who="class">Сынып</button>
+            <button type="button" role="radio" data-who="families">Бірнеше отбасы</button>
           </div>
-          <p class="muted small" id="whoHint"></p>
-        </article>
+          <p class="hint" id="whoHint"></p>
+        </fieldset>
 
-        <!-- Блок Б -->
-        <article class="card" id="blockB">
-          <header class="card__head"><span class="step">Б</span><h2>Что накопилось</h2>
-            <button class="link-btn" type="button" id="addParticipant" hidden>+ участник</button>
-          </header>
-          <p class="muted small">Масса в килограммах. Названия материалов соответствуют условиям приёма — общей категории «пластик» нет.</p>
-          <div class="table-scroll">
-            <table class="mass-table" id="massTable"></table>
+        <fieldset class="block">
+          <legend><span class="no">2</span>Не жиналды</legend>
+          <p class="hint">Масса килограммен. Материалдардың атаулары пункттердің қабылдау шарттарына сәйкес келеді, сондықтан жалпы «пластик» санаты жоқ.</p>
+          <div class="scroll">
+            <table class="mass" id="massTable"></table>
           </div>
-          <p class="error-text" id="massError" hidden></p>
-        </article>
+          <div class="block__foot">
+            <button class="link" type="button" id="addParticipant" hidden>+ қатысушы қосу</button>
+            <form class="addmat" id="addMatForm">
+              <input name="mat" placeholder="Пункт прайсындағы атауы" aria-label="Жаңа материал атауы">
+              <button class="link" type="submit">+ материал қосу</button>
+            </form>
+          </div>
+          <p class="error" id="massError" hidden></p>
+        </fieldset>
 
-        <!-- Блок В -->
-        <article class="card" id="blockC">
-          <header class="card__head"><span class="step">В</span><h2>Как доставлять</h2></header>
-          <div class="modes" role="radiogroup" aria-label="Способ доставки" id="modeSeg">
-            <button type="button" role="radio" data-mode="walk">
-              <b>Пешком / велосипед</b><span>Топлива нет, но время тратится</span>
-            </button>
-            <button type="button" role="radio" data-mode="separate">
-              <b>Отдельная поездка</b><span>Путь туда и обратно</span>
-            </button>
-            <button type="button" role="radio" data-mode="onway">
-              <b>Заезд по пути</b><span>Только прибавка к обычному маршруту</span>
-            </button>
+        <fieldset class="block">
+          <legend><span class="no">3</span>Қалай жеткізу</legend>
+          <div class="modes" role="radiogroup" aria-label="Жеткізу тәсілі" id="modeSeg">
+            <button type="button" role="radio" data-mode="walk"><b>Жаяу немесе велосипедпен</b><span>жанармай жоқ, бірақ уақыт жұмсалады</span></button>
+            <button type="button" role="radio" data-mode="separate"><b>Жеке сапар</b><span>бару-қайту жолы</span></button>
+            <button type="button" role="radio" data-mode="onway"><b>Жол-жөнекей соғу</b><span>күнделікті бағытқа қосымша жол</span></button>
           </div>
-          <div class="grid2" id="carFields">
-            <label class="field"><span>Расход, л/100 км</span><input type="number" inputmode="decimal" min="0" step="0.1" id="consumption"></label>
-            <label class="field"><span>Цена топлива, ₸/л</span><input type="number" inputmode="decimal" min="0" step="1" id="fuelPrice"></label>
+          <div class="pair" id="carFields">
+            <label class="field"><span>Отын шығыны, л/100 км</span><input type="number" inputmode="decimal" min="0" step="0.1" id="consumption"></label>
+            <label class="field"><span>Жанармай бағасы, ₸/л</span><input type="number" inputmode="decimal" min="0" step="1" id="fuelPrice"></label>
           </div>
-          <p class="muted small" id="modeHint"></p>
-          <p class="error-text" id="carError" hidden></p>
-        </article>
+          <p class="hint" id="modeHint"></p>
+          <p class="error" id="carError" hidden></p>
+        </fieldset>
 
-        <!-- Блок Г -->
-        <article class="card" id="blockD">
-          <header class="card__head"><span class="step">Г</span><h2>Какие пункты сравнивать</h2>
-            <button class="link-btn" type="button" id="addPoint">+ пункт</button>
-          </header>
-          <p class="muted small">Расстояние вводится вручную — домашний адрес не нужен. <span id="distHint"></span></p>
+        <fieldset class="block">
+          <legend><span class="no">4</span>Салыстырылатын пункттер</legend>
+          <p class="hint">Қашықтық қолмен енгізіледі, үй мекенжайы қажет емес. <span id="distHint"></span></p>
           <div class="points" id="pointsList"></div>
-          <div class="row-actions">
-            <button class="link-btn" type="button" id="exportBtn">Экспорт данных</button>
-            <label class="link-btn">Импорт<input type="file" accept="application/json" id="importInput" hidden></label>
-            <button class="link-btn link-btn--muted" type="button" id="resetBtn">Сбросить к условным</button>
+          <div class="block__foot">
+            <button class="link" type="button" id="addPoint">+ пункт қосу</button>
+            <button class="link" type="button" id="exportBtn">Пункттерді экспорттау</button>
+            <label class="link">Импорттау<input type="file" accept="application/json" id="importInput" hidden></label>
+            <button class="link link--muted" type="button" id="resetBtn">Шартты деректерге қайтару</button>
           </div>
-        </article>
+        </fieldset>
       </div>
 
-      <!-- Сводка -->
-      <aside class="summary" aria-live="polite">
-        <div class="summary__inner" id="summary"></div>
-      </aside>
+      <aside class="summary" aria-live="polite" id="summary"></aside>
     </section>
 
-    <!-- Результат 1 -->
-    <section class="wrap section" id="compare">
-      <div class="section__head">
-        <p class="eyebrow">Результат 1</p>
-        <h2>Сравнение пунктов</h2>
-        <p class="muted">Пункт, принимающий только часть сырья, не считается лучшим вариантом для всего набора. Отрицательный итог показывается как есть.</p>
-      </div>
-      <div class="table-scroll card card--flush">
-        <table class="cmp" id="cmpTable"></table>
-      </div>
+    <section class="wrap sec" id="compare">
+      <header class="sec__head">
+        <span class="no">5</span>
+        <div>
+          <h2>Пункттерді салыстыру</h2>
+          <p>Шикізаттың бір бөлігін ғана қабылдайтын пункт барлық жиынтық үшін ең тиімді нұсқа ретінде көрсетілмейді. Теріс нәтиже сол күйінде көрсетіледі. Жолды басып, пунктті таңдаңыз.</p>
+        </div>
+      </header>
+      <div class="scroll panel"><table class="tbl cmp" id="cmpTable"></table></div>
     </section>
 
-    <!-- Результат 2 -->
-    <section class="wrap section" id="threshold">
-      <div class="section__head">
-        <p class="eyebrow">Результат 2</p>
-        <h2>Сдать сейчас или накопить?</h2>
-        <p class="muted">Порог накопления <span class="f">m<sub>min</sub> = C / p</span> — масса, при которой выручка покрывает топливо. Если у пункта есть минимальная партия, порог не меньше неё.</p>
+    <section class="wrap sec" id="threshold">
+      <header class="sec__head">
+        <span class="no">6</span>
+        <div>
+          <h2>Қазір өткізу ме, әлде жинай беру ме?</h2>
+          <p>Жинақтау шегі <span class="f">m<sub>min</sub> = C / p</span> — түсім жанармай шығынын өтейтін масса. Пункттің ең аз партиясы болса, шек одан кем болмайды.</p>
+        </div>
+      </header>
+      <div class="cols">
+        <div class="panel pad" id="verdictCard"></div>
+        <div class="panel pad" id="chartCard"></div>
       </div>
-      <div class="grid-th">
-        <div class="card" id="verdictCard"></div>
-        <div class="card" id="thCard"></div>
-      </div>
+      <div class="panel pad" id="thCard"></div>
     </section>
 
-    <!-- Результат 3 -->
-    <section class="wrap section" id="joint">
-      <div class="section__head">
-        <p class="eyebrow">Результат 3</p>
-        <h2>Объединиться</h2>
-        <p class="muted">Несколько отдельных поездок против одной общей. Общая поездка не равна маршруту одной семьи — объезд для сбора сырья вводится отдельно.</p>
-      </div>
-      <div class="card" id="jointCard"></div>
+    <section class="wrap sec" id="joint">
+      <header class="sec__head">
+        <span class="no">7</span>
+        <div>
+          <h2>Бірлесіп өткізу</h2>
+          <p>Бірнеше жеке сапар бір ортақ сапармен салыстырылады. Ортақ сапар бір отбасының бағытымен бірдей емес, сондықтан шикізатты жинауға айналып өту жолы бөлек енгізіледі.</p>
+        </div>
+      </header>
+      <div class="panel pad" id="jointCard"></div>
     </section>
 
-    <!-- Как считали -->
-    <section class="wrap section" id="method">
-      <div class="section__head">
-        <p class="eyebrow">Методика</p>
-        <h2>Как считали</h2>
-      </div>
-      <div class="grid-method">
-        <div class="card" id="stepsCard"></div>
-        <div class="card formulas">
-          <h3>Формулы</h3>
+    <section class="wrap sec" id="journal">
+      <header class="sec__head">
+        <span class="no">8</span>
+        <div>
+          <h2>Пилоттық тексеру журналы</h2>
+          <p>Болжамды сақтаңыз, ал өткізгеннен кейін нақты массаны және төлемді енгізіңіз — калькулятордың дәлдігі есептеледі. Бірнеше отбасы немесе бір сынып қаланың репрезентативті іріктемесі емес.</p>
+        </div>
+      </header>
+      <div class="panel pad" id="journalCard"></div>
+    </section>
+
+    <section class="wrap sec" id="method">
+      <header class="sec__head">
+        <span class="no">9</span>
+        <div><h2>Есептеу әдістемесі</h2></div>
+      </header>
+      <div class="cols cols--method">
+        <div class="panel pad" id="stepsCard"></div>
+        <div class="panel pad formulas">
+          <h3>Формулалар</h3>
           <dl>
-            <dt>Выручка</dt><dd><span class="f">R = Σ m<sub>i</sub> · p<sub>i</sub></span> — только принимаемые материалы с известной ценой</dd>
-            <dt>Расход топлива</dt><dd><span class="f">Q = d · c / 100</span> — d, км; c, л/100 км</dd>
-            <dt>Расходы на топливо</dt><dd><span class="f">C = Q · p<sub>топл</sub></span></dd>
-            <dt>Результат после расходов на топливо</dt><dd><span class="f">B = R − C</span> — не чистая прибыль</dd>
-            <dt>Порог накопления</dt><dd><span class="f">m<sub>min</sub> = max(C / p, партия)</span></dd>
+            <dt>Түсім</dt><dd><span class="f">R = Σ m<sub>i</sub> · p<sub>i</sub></span>, мұнда m<sub>i</sub> — материал массасы, p<sub>i</sub> — оның 1 кг бағасы. Тек пункт қабылдайтын және бағасы белгілі материалдар есептеледі.</dd>
+            <dt>Отын шығыны</dt><dd><span class="f">Q = d · c / 100</span>, мұнда d — қосымша жүріс, км; c — отын шығыны, л/100 км.</dd>
+            <dt>Жанармай шығыны</dt><dd><span class="f">C = Q · p<sub>ж</sub></span>, мұнда p<sub>ж</sub> — 1 литр жанармай бағасы.</dd>
+            <dt>Жанармай шығынын шегергендегі нәтиже</dt><dd><span class="f">B = R − C</span>. Бұл таза пайда емес: уақыт пен көлікке қызмет көрсету есепке алынбайды.</dd>
+            <dt>Жинақтау шегі</dt><dd><span class="f">m<sub>min</sub> = max(C / p; партия)</span>. Баға нөлге тең болса, шек анықталмайды.</dd>
           </dl>
-          <h3>Ограничения</h3>
+          <h3>Шектеулер</h3>
           <ul class="limits">
-            <li>Цены приёма меняются — у каждого пункта указана дата проверки.</li>
-            <li>Расход топлива приблизительный: пробки, прогрев и стиль езды не учтены.</li>
-            <li>Время, обслуживание автомобиля и другие расходы не учитываются.</li>
-            <li>Программа охватывает только введённые и проверенные пункты.</li>
+            <li>Қабылдау бағалары өзгереді — әр пункттің тексерілген күні көрсетіледі.</li>
+            <li>Отын шығыны шамамен алынады: кептеліс, қозғалтқышты қыздыру және жүргізу мәнері ескерілмейді.</li>
+            <li>Уақыт, көлікке қызмет көрсету және басқа шығындар есепке алынбайды.</li>
+            <li>Бағдарлама тек енгізілген және тексерілген пункттерді қамтиды.</li>
           </ul>
         </div>
       </div>
@@ -177,45 +194,48 @@
   </main>
 
   <footer class="foot">
-    <div class="wrap foot__row">
-      <p class="kk">Калькулятор вторсырьё өткізуден түсетін қаражатты, жолға кететін жанармай шығынын және жинақтаудың шекті мөлшерін есептейді.</p>
-      <p class="muted small">EcoEsep · данные хранятся только в вашем браузере</p>
+    <div class="wrap">
+      <p class="foot__lead">Калькулятор қайталама шикізатты өткізуден түсетін қаражатты, жолға кететін жанармай шығынын және жинақтаудың шекті мөлшерін есептейді.</p>
+      <p class="foot__meta" id="projectMeta"></p>
+      <p class="foot__meta">Енгізілген деректер тек осы браузерде сақталады және ешқайда жіберілмейді.</p>
     </div>
   </footer>
 
-  <!-- Редактор пункта -->
   <dialog class="dlg" id="pointDlg">
-    <form method="dialog" class="dlg__form" id="pointForm">
+    <form method="dialog" id="pointForm">
       <header class="dlg__head">
-        <h2 id="pointDlgTitle">Пункт приёма</h2>
-        <button class="icon-btn" value="cancel" aria-label="Закрыть">✕</button>
+        <h2 id="pointDlgTitle">Қабылдау пункті</h2>
+        <button class="close" value="cancel" aria-label="Жабу">×</button>
       </header>
       <div class="dlg__body">
-        <div class="grid2">
-          <label class="field"><span>Название</span><input name="ptName" required></label>
-          <label class="field"><span>Адрес</span><input name="address"></label>
+        <div class="pair">
+          <label class="field"><span>Атауы</span><input name="ptName" required></label>
+          <label class="field"><span>Мекенжайы</span><input name="address"></label>
         </div>
-        <h3 class="dlg__sub">Принимаемые материалы</h3>
-        <p class="muted small">Отметьте, что принимает пункт. Пустая цена — «уточняется»: такой материал не войдёт в выручку.</p>
-        <div class="mat-editor" id="matEditor"></div>
-        <div class="grid2">
-          <label class="field"><span>Требования</span><input name="requirements" placeholder="чистота, сухость, разделение"></label>
-          <label class="field"><span>Источник</span><input name="source" placeholder="звонок, прайс, сайт"></label>
-          <label class="field"><span>Дата проверки</span><input type="date" name="checkedAt"></label>
-          <label class="field check"><input type="checkbox" name="confirmed"><span>Цены подтверждены</span></label>
+        <h3>Қабылданатын материалдар</h3>
+        <p class="hint">Пункт қабылдайтын материалдарды белгілеңіз. Баға бос қалса, ол «нақтыланбаған» болып саналады және түсімге кірмейді.</p>
+        <div class="me-list" id="matEditor"></div>
+        <div class="pair">
+          <label class="field"><span>Талаптар</span><input name="requirements" placeholder="тазалығы, құрғақтығы, сұрыпталуы"></label>
+          <label class="field"><span>Дереккөз</span><input name="source" placeholder="қоңырау, прайс, сайт"></label>
+          <label class="field"><span>Тексерілген күні</span><input type="date" name="checkedAt"></label>
+          <label class="check"><input type="checkbox" name="confirmed"><span>Бағаларды пункт растады</span></label>
         </div>
       </div>
       <footer class="dlg__foot">
-        <button type="button" class="link-btn link-btn--danger" id="deletePoint">Удалить пункт</button>
-        <span class="spacer"></span>
-        <button class="btn btn--ghost" value="cancel">Отмена</button>
-        <button class="btn btn--primary" value="save" id="savePoint">Сохранить</button>
+        <button type="button" class="link link--danger" id="deletePoint">Пунктті өшіру</button>
+        <span class="grow"></span>
+        <button class="btn" value="cancel">Бас тарту</button>
+        <button class="btn btn--primary" value="save">Сақтау</button>
       </footer>
     </form>
   </dialog>
 
   <script src="js/calc.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/format.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/chart.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,68 +1,79 @@
 /*
- * Исходные данные.
- * ВНИМАНИЕ: пункты ниже — УСЛОВНЫЕ данные для демонстрации и проверки алгоритма.
- * Замените их проверенными сведениями (звонок, прайс, визит) через интерфейс или этот файл.
- * Неподтверждённую цену записывайте как null — калькулятор покажет «уточняется».
+ * Бастапқы деректер.
+ * НАЗАР АУДАРЫҢЫЗ: төмендегі пункттер — алгоритмді көрсету және тексеру үшін алынған ШАРТТЫ деректер.
+ * Оларды тексерілген мәліметтермен (қоңырау, прайс, бару) интерфейс арқылы немесе осы файлда ауыстырыңыз.
+ * Расталмаған бағаны null деп жазыңыз — калькулятор «нақтыланбаған» деп көрсетеді.
  */
 window.EcoData = {
-  // Названия должны совпадать с условиями приёма пунктов, а не «пластик вообще»
+  // Жоба туралы мәлімет — төменгі деректемеде көрсетіледі (бос өрістер шықпайды)
+  project: {
+    author: '',
+    school: '',
+    supervisor: '',
+    city: 'Көкшетау',
+    year: '2026'
+  },
+
+  // Атаулар пункттердің қабылдау шарттарымен сәйкес келуі керек — жалпы «пластик» емес
   materials: [
-    { id: 'paper', name: 'Бумага', hint: 'газеты, тетради, офисная' },
-    { id: 'cardboard', name: 'Картон', hint: 'гофрокартон, коробки' },
-    { id: 'pet_clear', name: 'ПЭТ-бутылки прозрачные', hint: 'маркировка 1, без крышек' },
-    { id: 'pet_color', name: 'ПЭТ-бутылки цветные', hint: 'маркировка 1' },
-    { id: 'hdpe', name: 'Пластик ПНД', hint: 'канистры, флаконы, маркировка 2' },
-    { id: 'alu', name: 'Алюминиевые банки', hint: 'из-под напитков' },
-    { id: 'glass', name: 'Стеклянная тара', hint: 'бутылки, банки' }
+    { id: 'paper', name: 'Қағаз', hint: 'газеттер, дәптерлер, кеңсе қағазы' },
+    { id: 'cardboard', name: 'Картон', hint: 'гофрокартон, қораптар' },
+    { id: 'pet_clear', name: 'Мөлдір ПЭТ бөтелкелер', hint: '1 таңбалы, қақпақсыз' },
+    { id: 'pet_color', name: 'Түсті ПЭТ бөтелкелер', hint: '1 таңбалы' },
+    { id: 'hdpe', name: 'HDPE пластик', hint: 'канистрлер, флакондар, 2 таңбалы' },
+    { id: 'alu', name: 'Алюминий банкалар', hint: 'сусын банкалары' },
+    { id: 'glass', name: 'Шыны ыдыс', hint: 'бөтелкелер, банкалар' }
   ],
 
   points: [
     {
       id: 'demo-a',
-      name: 'Пункт А',
-      address: 'условный адрес',
+      name: 'А пункті',
+      address: 'шартты мекенжай',
       prices: { paper: 40, cardboard: 35 },
       minBatch: {},
-      requirements: 'Сухая, без скотча и плёнки',
+      requirements: 'құрғақ, скотчсыз және үлдірсіз',
       checkedAt: '',
-      source: 'условные данные',
+      source: 'шартты деректер',
       confirmed: false,
       oneWayKm: 5,
       detourKm: 3
     },
     {
       id: 'demo-b',
-      name: 'Пункт Б',
-      address: 'условный адрес',
+      name: 'Б пункті',
+      address: 'шартты мекенжай',
       prices: { pet_clear: 60, pet_color: 30, alu: 250, paper: 35 },
       minBatch: { pet_clear: 5 },
-      requirements: 'Бутылки сплющить, крышки снять',
+      requirements: 'бөтелкелерді жаныштап, қақпағын алу',
       checkedAt: '',
-      source: 'условные данные',
+      source: 'шартты деректер',
       confirmed: false,
       oneWayKm: 8,
       detourKm: 4
     },
     {
       id: 'demo-c',
-      name: 'Пункт В',
-      address: 'условный адрес',
+      name: 'В пункті',
+      address: 'шартты мекенжай',
       prices: { paper: 30, cardboard: 30, pet_clear: 50, hdpe: null, glass: null },
       minBatch: { paper: 10 },
-      requirements: 'Разделить по видам',
+      requirements: 'түрлері бойынша сұрыптау',
       checkedAt: '',
-      source: 'условные данные',
+      source: 'шартты деректер',
       confirmed: false,
       oneWayKm: 12,
       detourKm: 6
     }
   ],
 
-  // Учебный пример для защиты (условные данные)
+  // Қорғауға арналған оқу мысалы (шартты деректер)
   example: {
     masses: { paper: 5 },
-    point: { id: 'example', name: 'Учебный пункт', address: '—', prices: { paper: 40 }, minBatch: {},
-      requirements: '', checkedAt: '', source: 'условные данные', confirmed: false, oneWayKm: 5, detourKm: 10 },
+    point: {
+      id: 'example', name: 'Оқу мысалындағы пункт', address: '—', prices: { paper: 40 }, minBatch: {},
+      requirements: '', checkedAt: '', source: 'шартты деректер', confirmed: false, oneWayKm: 5, detourKm: 10
+    },
     transport: { mode: 'onway', consumption: 10, fuelPrice: 300 }
   }
 };

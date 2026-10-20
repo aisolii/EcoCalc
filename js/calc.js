@@ -1,13 +1,13 @@
 /*
- * EcoEsep — расчётное ядро.
- * Чистые функции без обращения к DOM, чтобы их можно было проверить тестами (tests/calc.test.js).
+ * EcoEsep — есептеу ядросы.
+ * DOM-ға тәуелсіз таза функциялар: оларды tests/calc.test.js арқылы тексеруге болады.
  *
- * Обозначения:
- *   R = Σ m_i · p_i          — выручка пункта (только принимаемые материалы с известной ценой)
- *   Q = d · c / 100          — расход топлива, л
- *   C = Q · p_fuel           — расходы на топливо, ₸
- *   B = R − C                — результат после расходов на топливо (НЕ чистая прибыль)
- *   m_min = max(C / p, партия) — масса материала, при которой выручка покрывает топливо
+ * Белгілеулер:
+ *   R = Σ mᵢ·pᵢ               — пункттің түсімі (тек қабылданатын, бағасы белгілі материалдар)
+ *   Q = d·c / 100             — отын шығыны, л
+ *   C = Q·p_ж                 — жанармай шығыны, ₸
+ *   B = R − C                 — жанармай шығынын шегергендегі нәтиже (таза пайда ЕМЕС)
+ *   m_min = max(C / p; партия) — түсім жанармайды өтейтін масса
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -17,130 +17,107 @@
 
   const MODES = { WALK: 'walk', SEPARATE: 'separate', ONWAY: 'onway' };
 
-  // Статусы материала относительно пункта
+  // Материалдың пунктке қатысты күйі
   const STATUS = {
-    OK: 'ok',                       // принимают, цена известна
-    UNPRICED: 'unpriced',           // принимают, цена уточняется — в выручку не входит
-    BELOW_MIN: 'below_min',         // масса меньше минимальной партии — сдать нельзя
-    NOT_ACCEPTED: 'not_accepted'    // пункт не принимает
+    OK: 'ok',                    // қабылданады, бағасы белгілі
+    UNPRICED: 'unpriced',        // қабылданады, бағасы нақтыланбаған — түсімге кірмейді
+    BELOW_MIN: 'below_min',      // масса ең аз партиядан кем — өткізу мүмкін емес
+    NOT_ACCEPTED: 'not_accepted' // пункт қабылдамайды
   };
 
-  function isNum(x) {
-    return typeof x === 'number' && Number.isFinite(x);
-  }
-
-  /** Проверка массы. Возвращает текст ошибки или null. */
-  function validateMass(value) {
-    if (value === '' || value === null || value === undefined) return null; // пусто = 0
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 'Введите число';
-    if (n < 0) return 'Масса не может быть отрицательной';
-    return null;
-  }
-
-  function validateNonNegative(value, label) {
-    if (value === '' || value === null || value === undefined) return null;
-    const n = Number(value);
-    if (!Number.isFinite(n)) return `${label}: введите число`;
-    if (n < 0) return `${label}: значение не может быть отрицательным`;
-    return null;
-  }
+  const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
+  const isEmpty = (v) => v === '' || v === null || v === undefined;
 
   function toNum(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
   }
 
-  /** Дополнительный пробег d, км, для выбранного способа доставки. */
+  /** Массаны тексеру. Қате мәтінін немесе null қайтарады. Бос өріс = 0. */
+  function validateMass(value) {
+    if (isEmpty(value)) return null;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'Сан енгізіңіз';
+    if (n < 0) return 'Масса теріс бола алмайды';
+    return null;
+  }
+
+  function validateNonNegative(value, label) {
+    if (isEmpty(value)) return null;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return `${label}: сан енгізіңіз`;
+    if (n < 0) return `${label}: мәні теріс бола алмайды`;
+    return null;
+  }
+
+  /** Жеткізу тәсіліне сәйкес қосымша жүріс d, км. */
   function tripDistance(mode, point) {
-    if (mode === MODES.WALK) return 0;
-    if (mode === MODES.SEPARATE) return 2 * toNum(point.oneWayKm); // туда и обратно
-    if (mode === MODES.ONWAY) return toNum(point.detourKm);        // только прибавка к маршруту
+    if (mode === MODES.SEPARATE) return 2 * toNum(point.oneWayKm); // бару-қайту
+    if (mode === MODES.ONWAY) return toNum(point.detourKm);        // бағытқа қосымша жол ғана
     return 0;
   }
 
-  /** Q = d·c/100, C = Q·p_fuel */
   function fuel(distanceKm, consumptionPer100, fuelPrice) {
     const liters = (toNum(distanceKm) * toNum(consumptionPer100)) / 100;
     return { liters, cost: liters * toNum(fuelPrice) };
   }
 
   /**
-   * Порог накопления для одного материала.
-   * Возвращает { kind, byFuel, byBatch, mMin, need }.
-   *   kind: 'ok' | 'zero_price' | 'unknown_price'
+   * Бір материал бойынша жинақтау шегі.
+   * kind: 'ok' | 'zero_price' (нөлге бөлуге болмайды) | 'unknown_price'
    */
   function threshold(fuelCost, price, minBatch, currentMass) {
     const batch = toNum(minBatch);
-    const mass = toNum(currentMass);
-    if (price === null || price === undefined) {
-      return { kind: 'unknown_price', byFuel: null, byBatch: batch, mMin: null, need: null };
-    }
-    if (!(price > 0)) {
-      // Деление на ноль недопустимо: сдача не даёт денежной выручки.
-      return { kind: 'zero_price', byFuel: null, byBatch: batch, mMin: null, need: null };
-    }
+    if (!isNum(price)) return { kind: 'unknown_price', byFuel: null, byBatch: batch, mMin: null, need: null };
+    if (!(price > 0)) return { kind: 'zero_price', byFuel: null, byBatch: batch, mMin: null, need: null };
     const byFuel = toNum(fuelCost) / price;
     const mMin = Math.max(byFuel, batch);
-    return { kind: 'ok', byFuel, byBatch: batch, mMin, need: Math.max(0, mMin - mass) };
+    return { kind: 'ok', byFuel, byBatch: batch, mMin, need: Math.max(0, mMin - toNum(currentMass)) };
+  }
+
+  function classify(mass, prices, minBatch, matId) {
+    if (!Object.prototype.hasOwnProperty.call(prices, matId)) return STATUS.NOT_ACCEPTED;
+    const batch = toNum(minBatch[matId]);
+    if (batch > 0 && mass < batch) return STATUS.BELOW_MIN;
+    return isNum(prices[matId]) ? STATUS.OK : STATUS.UNPRICED;
   }
 
   /**
-   * Оценка одного пункта приёма.
-   * @param point     { id, name, prices: {matId: number|null}, minBatch: {matId: kg}, oneWayKm, detourKm, ... }
-   * @param masses    { matId: kg }
-   * @param transport { mode, consumption, fuelPrice }
-   * @param opts      { distanceKm } — переопределить пробег (для сравнения совместной сдачи)
+   * Бір қабылдау пунктін бағалау.
+   * point:     { id, prices: {matId: ₸/кг | null}, minBatch: {matId: кг}, oneWayKm, detourKm }
+   * masses:    { matId: кг }
+   * transport: { mode, consumption, fuelPrice }
+   * opts.distanceKm — жүрісті тікелей беру (бірлесіп өткізуді салыстыру үшін)
    */
-  function evaluatePoint(point, masses, transport, opts) {
-    opts = opts || {};
+  function evaluatePoint(point, masses, transport, opts = {}) {
     const prices = point.prices || {};
     const minBatch = point.minBatch || {};
     const items = [];
-    let revenue = 0;
 
     for (const matId of Object.keys(masses)) {
       const mass = toNum(masses[matId]);
       if (!(mass > 0)) continue;
-      const accepted = Object.prototype.hasOwnProperty.call(prices, matId);
-      const price = accepted ? prices[matId] : undefined;
-      const batch = toNum(minBatch[matId]);
-      let status;
-      let itemRevenue = 0;
-      if (!accepted) status = STATUS.NOT_ACCEPTED;
-      else if (batch > 0 && mass < batch) status = STATUS.BELOW_MIN;
-      else if (!isNum(price)) status = STATUS.UNPRICED;
-      else {
-        status = STATUS.OK;
-        itemRevenue = mass * price;
-      }
-      revenue += itemRevenue;
-      items.push({ matId, mass, price: isNum(price) ? price : null, minBatch: batch, status, revenue: itemRevenue });
+      const status = classify(mass, prices, minBatch, matId);
+      const price = isNum(prices[matId]) ? prices[matId] : null;
+      items.push({
+        matId, mass, price, status,
+        minBatch: toNum(minBatch[matId]),
+        revenue: status === STATUS.OK ? mass * price : 0
+      });
     }
 
-    const distanceKm = isNum(opts.distanceKm) ? opts.distanceKm : tripDistance(transport.mode, point);
-    const f = transport.mode === MODES.WALK && !isNum(opts.distanceKm)
+    const revenue = items.reduce((s, it) => s + it.revenue, 0);
+    const fixedDistance = isNum(opts.distanceKm);
+    const distanceKm = fixedDistance ? opts.distanceKm : tripDistance(transport.mode, point);
+    const f = transport.mode === MODES.WALK && !fixedDistance
       ? { liters: 0, cost: 0 }
       : fuel(distanceKm, transport.consumption, transport.fuelPrice);
-
     const result = revenue - f.cost;
+
     const by = (s) => items.filter((it) => it.status === s);
     const notAccepted = by(STATUS.NOT_ACCEPTED);
     const belowMin = by(STATUS.BELOW_MIN);
-    const unpriced = by(STATUS.UNPRICED);
     const hasMass = items.length > 0;
-    // «Весь набор» — каждый материал с массой > 0 пункт может принять сейчас
-    const acceptsAll = hasMass && notAccepted.length === 0 && belowMin.length === 0;
-
-    // Пороги по каждому принимаемому материалу
-    const thresholds = Object.keys(prices).map((matId) => ({
-      matId,
-      ...threshold(f.cost, prices[matId], minBatch[matId], masses[matId])
-    }));
-
-    // Сколько нужно при той же пропорции материалов: k = C / R
-    let scale = null;
-    if (revenue > 0 && result < 0) scale = f.cost / revenue;
 
     return {
       pointId: point.id,
@@ -151,52 +128,41 @@
       fuelCost: f.cost,
       result,
       hasMass,
-      acceptsAll,
+      // «Барлық жиынтық» — массасы бар әр материалды пункт дәл қазір қабылдай алады
+      acceptsAll: hasMass && notAccepted.length === 0 && belowMin.length === 0,
       notAccepted,
       belowMin,
-      unpriced,
-      thresholds,
-      scale
+      unpriced: by(STATUS.UNPRICED),
+      thresholds: Object.keys(prices).map((matId) => ({
+        matId, ...threshold(f.cost, prices[matId], minBatch[matId], masses[matId])
+      })),
+      // Материалдардың осы арақатынасында қанша есе көп керек: k = C / R
+      scale: revenue > 0 && result < 0 ? f.cost / revenue : null
     };
   }
 
-  /**
-   * Сравнение пунктов. Возвращает оценки, отсортированные по итогу,
-   * и отдельно — лучший пункт для ВСЕГО набора (только среди принимающих всё).
-   */
+  /** Пункттерді нәтиже бойынша сұрыптайды; «ең тиімдісі» тек бәрін қабылдайтындар арасынан. */
   function comparePoints(points, masses, transport) {
-    const evals = points.map((p) => evaluatePoint(p, masses, transport));
-    const sorted = evals.slice().sort((a, b) => b.result - a.result);
-    const full = sorted.filter((e) => e.acceptsAll);
+    const evals = points.map((p) => evaluatePoint(p, masses, transport))
+      .sort((a, b) => b.result - a.result);
     return {
-      evals: sorted,
-      bestFull: full.length ? full[0] : null,
-      bestAny: sorted.length && sorted[0].hasMass ? sorted[0] : null
+      evals,
+      bestFull: evals.find((e) => e.acceptsAll) || null,
+      bestAny: evals.length && evals[0].hasMass ? evals[0] : null
     };
   }
 
-  /** Совет «сдать сейчас или накопить?» */
+  /** «Қазір өткізу ме, әлде жинай беру ме?» — кодты қайтарады, мәтінді интерфейс таңдайды. */
   function advice(ev, mode) {
-    if (!ev || !ev.hasMass) return { tone: 'neutral', text: 'Введите массу накопленного вторсырья.' };
-    if (mode === MODES.WALK) {
-      return {
-        tone: ev.revenue > 0 ? 'good' : 'neutral',
-        text: 'Расходов на топливо нет, но затраты времени и сил программа не учитывает.'
-      };
-    }
-    if (ev.result >= 0) {
-      return { tone: 'good', text: 'При текущих условиях выручка покрывает расходы на топливо — сдавать сейчас можно.' };
-    }
-    return {
-      tone: 'bad',
-      text: 'При текущих условиях выручка не покрывает топливо для этой поездки. Можно накопить больше или совместить сдачу с другой поездкой.'
-    };
+    if (!ev || !ev.hasMass) return { tone: 'neutral', code: 'no_mass' };
+    if (mode === MODES.WALK) return { tone: 'neutral', code: 'walk' };
+    return ev.result >= 0 ? { tone: 'good', code: 'covers' } : { tone: 'bad', code: 'not_covers' };
   }
 
   /**
-   * Совместная сдача: несколько отдельных поездок против одной общей.
-   * participants: [{ name, masses, distanceKm }] — distanceKm: доп. пробег его отдельной поездки
-   * jointDistanceKm: доп. пробег общей поездки с учётом объезда для сбора сырья
+   * Бірлесіп өткізу: бірнеше жеке сапар мен бір ортақ сапар.
+   * participants: [{ name, masses, distanceKm }] — distanceKm: қатысушының жеке сапарындағы жүріс
+   * jointDistanceKm: шикізат жинауға айналып өтуді қоса алғандағы ортақ сапар жүрісі
    */
   function compareJoint(point, participants, transport, jointDistanceKm) {
     const car = { mode: MODES.SEPARATE, consumption: transport.consumption, fuelPrice: transport.fuelPrice };
@@ -205,20 +171,19 @@
       ev: evaluatePoint(point, p.masses, car, { distanceKm: toNum(p.distanceKm) })
     }));
     const active = separate.filter((s) => s.ev.hasMass);
-    const sepRevenue = active.reduce((s, x) => s + x.ev.revenue, 0);
-    const sepFuel = active.reduce((s, x) => s + x.ev.fuelCost, 0);
-    const sepDistance = active.reduce((s, x) => s + x.ev.distanceKm, 0);
-
-    const total = sumMasses(participants.map((p) => p.masses));
-    const joint = evaluatePoint(point, total, car, { distanceKm: toNum(jointDistanceKm) });
-
-    return {
-      separate,
-      separateTotal: { revenue: sepRevenue, fuelCost: sepFuel, distanceKm: sepDistance, result: sepRevenue - sepFuel, trips: active.length },
-      joint,
-      gain: joint.result - (sepRevenue - sepFuel),
-      totalMasses: total
+    const sum = (key) => active.reduce((s, x) => s + x.ev[key], 0);
+    const separateTotal = {
+      revenue: sum('revenue'),
+      fuelCost: sum('fuelCost'),
+      distanceKm: sum('distanceKm'),
+      trips: active.length
     };
+    separateTotal.result = separateTotal.revenue - separateTotal.fuelCost;
+
+    const totalMasses = sumMasses(participants.map((p) => p.masses));
+    const joint = evaluatePoint(point, totalMasses, car, { distanceKm: toNum(jointDistanceKm) });
+
+    return { separate, separateTotal, joint, gain: joint.result - separateTotal.result, totalMasses };
   }
 
   function sumMasses(list) {
@@ -229,10 +194,24 @@
     return out;
   }
 
+  /** Болжам мен нақты төлемді салыстыру (пилоттық тексеру журналы). */
+  function forecastError(records) {
+    const done = records.filter((r) => !isEmpty(r.actualPayment) && Number.isFinite(Number(r.actualPayment)));
+    if (!done.length) return { n: 0, mae: null, mape: null };
+    const abs = done.map((r) => Math.abs(Number(r.actualPayment) - r.predictedRevenue));
+    const rel = done.filter((r) => Number(r.actualPayment) > 0)
+      .map((r) => Math.abs(Number(r.actualPayment) - r.predictedRevenue) / Number(r.actualPayment));
+    return {
+      n: done.length,
+      mae: abs.reduce((s, x) => s + x, 0) / done.length,
+      mape: rel.length ? (rel.reduce((s, x) => s + x, 0) / rel.length) * 100 : null
+    };
+  }
+
   return {
     MODES, STATUS,
     validateMass, validateNonNegative,
     tripDistance, fuel, threshold,
-    evaluatePoint, comparePoints, advice, compareJoint, sumMasses
+    evaluatePoint, comparePoints, advice, compareJoint, sumMasses, forecastError
   };
 });
