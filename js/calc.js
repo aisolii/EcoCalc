@@ -50,6 +50,13 @@
     return null;
   }
 
+  /** Қашықтық енгізілген бе (жаяу барғанда қажет емес). */
+  function distanceKnown(mode, point) {
+    if (mode === MODES.SEPARATE) return !isEmpty(point.oneWayKm);
+    if (mode === MODES.ONWAY) return !isEmpty(point.detourKm);
+    return true;
+  }
+
   /** Жеткізу тәсіліне сәйкес қосымша жүріс d, км. */
   function tripDistance(mode, point) {
     if (mode === MODES.SEPARATE) return 2 * toNum(point.oneWayKm); // бару-қайту
@@ -124,6 +131,7 @@
       items,
       revenue,
       distanceKm,
+      distanceKnown: fixedDistance || distanceKnown(transport.mode, point),
       liters: f.liters,
       fuelCost: f.cost,
       result,
@@ -141,14 +149,19 @@
     };
   }
 
-  /** Пункттерді нәтиже бойынша сұрыптайды; «ең тиімдісі» тек бәрін қабылдайтындар арасынан. */
+  /**
+   * Пункттерді нәтиже бойынша сұрыптайды.
+   * «Ең тиімдісі» тек түсімі белгілі (R > 0) және қашықтығы енгізілген пункттер арасынан таңдалады;
+   * «барлық жиынтық үшін» — оның үстіне барлық материалды қабылдайтындар арасынан.
+   */
   function comparePoints(points, masses, transport) {
     const evals = points.map((p) => evaluatePoint(p, masses, transport))
       .sort((a, b) => b.result - a.result);
+    const candidates = evals.filter((e) => e.revenue > 0 && e.distanceKnown);
     return {
       evals,
-      bestFull: evals.find((e) => e.acceptsAll) || null,
-      bestAny: evals.length && evals[0].hasMass ? evals[0] : null
+      bestFull: candidates.find((e) => e.acceptsAll) || null,
+      bestAny: candidates[0] || null
     };
   }
 
@@ -211,7 +224,7 @@
   return {
     MODES, STATUS,
     validateMass, validateNonNegative,
-    tripDistance, fuel, threshold,
+    tripDistance, distanceKnown, fuel, threshold,
     evaluatePoint, comparePoints, advice, compareJoint, sumMasses, forecastError
   };
 });

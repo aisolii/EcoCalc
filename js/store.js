@@ -1,7 +1,8 @@
 /* Күйді сақтау: енгізілген деректер тек пайдаланушының браузерінде (localStorage) */
 (function () {
   'use strict';
-  const KEY = 'ecoesep.v2';
+  const KEY = 'ecoesep.v3';
+  const OLD_KEY = 'ecoesep.v2';
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -10,25 +11,37 @@
     return {
       who: 'family',
       materials: clone(D.materials),
-      participants: [{ id: uid(), name: '1-отбасы', masses: { paper: '12', cardboard: '6', pet_clear: '3' }, distanceKm: '10' }],
-      transport: { mode: 'separate', consumption: '9', fuelPrice: '300' },
+      participants: [{ id: uid(), name: '1-отбасы', masses: {}, distanceKm: '' }],
+      transport: { mode: 'separate', consumption: '8', fuelPrice: '' },
       points: clone(D.points),
       focusId: null,
-      joint: { pointId: null, distanceKm: '14' },
+      joint: { pointId: null, distanceKm: '' },
+      route: { from: '' },
+      mapPointId: null,
+      step: 1,
+      resultTab: 'compare',
+      notes: [],
       journal: []
     };
   }
 
-  function load() {
+  function read(key) {
     try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return defaults();
-      const s = JSON.parse(raw);
-      if (!s || !Array.isArray(s.points) || !Array.isArray(s.participants)) return defaults();
-      return Object.assign(defaults(), s);
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
     } catch (e) {
-      return defaults();
+      return null;
     }
+  }
+
+  function load() {
+    const s = read(KEY);
+    if (s && Array.isArray(s.points) && Array.isArray(s.participants)) return Object.assign(defaults(), s);
+    // Алдыңғы нұсқадағы тексеру журналын сақтап қалу
+    const fresh = defaults();
+    const old = read(OLD_KEY);
+    if (old && Array.isArray(old.journal)) fresh.journal = old.journal;
+    return fresh;
   }
 
   function save(state) {

@@ -126,3 +126,15 @@ test('15. Болжам дәлдігі: орташа абсолют және са
   close(e.mae, 10);
   close(e.mape, (20 / 180) * 100 / 2);
 });
+
+test('16. Бағасы белгісіз немесе қашықтығы енгізілмеген пункт «ең тиімді» бола алмайды', () => {
+  const pts = [
+    { id: 'unknown', prices: { paper: null }, minBatch: {}, detourKm: 1 },
+    { id: 'nodist', prices: { paper: 100 }, minBatch: {}, detourKm: '' },
+    { id: 'ok', prices: { paper: 40 }, minBatch: {}, detourKm: 10 }
+  ];
+  const r = C.comparePoints(pts, { paper: 5 }, car);
+  assert.equal(r.evals.find((e) => e.pointId === 'nodist').distanceKnown, false);
+  assert.equal(r.bestFull.pointId, 'ok');
+  assert.equal(r.bestAny.pointId, 'ok');
+});
