@@ -30,6 +30,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h2M16 15v3"/></svg>
           <span>Калькулятор</span>
         </a>
+        <a href="#/model" data-nav="model">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c3-9 5-13 8-13s4 6 8 6"/><path d="M4 5v14h16"/></svg>
+          <span>Математикалық модель</span>
+        </a>
         <a href="#/map" data-nav="map">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 1 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
           <span>Карта мен маршрут</span>
@@ -74,6 +78,17 @@
           <button class="btn" type="button" id="prevStep">← Артқа</button>
           <button class="btn btn--primary" type="button" id="nextStep">Келесі →</button>
         </div>
+      </section>
+
+      <!-- ============ МАТЕМАТИКАЛЫҚ МОДЕЛЬ ============ -->
+      <section class="view" data-view="model" aria-labelledby="modelTitle" hidden>
+        <header class="page-head">
+          <h1 id="modelTitle">Математикалық модель</h1>
+          <p>Калькулятор бір сапарды бағалайды. Модель бұдан әрі жүреді: шикізаттың уақыт бойынша жиналуын, ең тиімді өткізу мерзімін, тәуекелді, болжамды және оңтайлы жоспарды есептейді. Әр бөлімде — сұрақ, жауап, график және «Математикасы» түсіндірмесі.</p>
+        </header>
+        <div class="panel pad" id="modelParams"></div>
+        <div class="mtabs" role="tablist" id="modelTabs"></div>
+        <div id="modelBody"></div>
       </section>
 
       <!-- ============ КАРТА ============ -->
@@ -182,6 +197,11 @@
             </ul>
           </div>
         </div>
+        <div class="panel pad">
+          <h2 class="h3">Математикалық модель</h2>
+          <p>Калькулятордың формулалары бір сапарды сипаттайды. Толық модель бес әдісті біріктіреді: (1) жинақталудың дифференциалдық теңдеуі dm/dt = g(1 − m/M) және Рунге–Кутта әдісі; (2) өткізу аралығын оңтайландыру J(T) → max; (3) Монте-Карло әдісімен ақталу ықтималдығы мен сезімталдық талдауы; (4) ең кіші квадраттар әдісімен болжам; (5) материалдарды пункттерге бөлудің дискретті оңтайландыруы.</p>
+          <div class="actions"><a class="btn btn--primary" href="#/model">Модельді ашу</a></div>
+        </div>
         <div class="panel pad" id="exampleCard"></div>
         <div class="panel pad">
           <h2 class="h3">Дереккөздер</h2>
@@ -191,7 +211,7 @@
             <li><a href="https://2gis.kz/kokshetau/firm/70000001034624912" target="_blank" rel="noopener">2ГИС — LS Kokshetau карточкасы</a></li>
             <li><a href="https://koshketau.spravker.ru/priemnyie-punktyi-steklotaryi/" target="_blank" rel="noopener">spravker.ru — Көкшетаудағы қабылдау пункттері</a></li>
           </ul>
-          <p class="hint">Мәліметтер 22.10.2026 жиналды. Есептеулер 16 автоматты тестпен тексерілген (tests/calc.test.js, docs/tests.md).</p>
+          <p class="hint">Мәліметтер 22.10.2026 жиналды. Есептеулер 27 автоматты тестпен тексерілген (tests/calc.test.js, tests/model.test.js, docs/tests.md).</p>
         </div>
       </section>
 
@@ -199,13 +219,14 @@
       <section class="view" data-view="help" aria-labelledby="helpTitle" hidden>
         <header class="page-head">
           <h1 id="helpTitle">Нұсқаулық</h1>
-          <p>Сайтты қалай пайдалану керек — бес қарапайым қадам.</p>
+          <p>Сайтты қалай пайдалану керек — алты қарапайым қадам.</p>
         </header>
         <ol class="howto">
           <li><b>Бағаларды тексеріңіз.</b> «Бағалар мен пункттер» бетінде пункттерге қоңырау шалыңыз (сұрақтар тізімі сонда бар) да, бағаларды жаңартыңыз. Растағаннан кейін «Бағаларды пункт растады» белгісін қойыңыз. <a href="#/prices">Бағаларға өту →</a></li>
           <li><b>Шикізатты өлшеңіз.</b> Түрлері бойынша бөлек өлшеп, калькулятордың 2-қадамына килограммен жазыңыз. <a href="#/calc">Калькуляторға өту →</a></li>
           <li><b>Қашықтықты анықтаңыз.</b> «Карта мен маршрут» бетінде пунктті таңдап, Google Maps маршрутындағы километрді жазып қойыңыз. <a href="#/map">Картаға өту →</a></li>
           <li><b>Нәтижені қараңыз.</b> Калькулятор ең тиімді пунктті, жанармай шығынын және қанша жинау керегін көрсетеді.</li>
+          <li><b>Модельді қараңыз.</b> «Математикалық модель» бетінде шикізат қанша күнде жиналатынын, қанша күнде бір рет өткізу тиімді екенін және сапардың ақталу ықтималдығын көресіз. <a href="#/model">Модельге өту →</a></li>
           <li><b>Нақты нәтижені жазыңыз.</b> Өткізгеннен кейін «Жазбалар мен журнал» бетінде нақты төлемді енгізіңіз — калькулятор өз дәлдігін есептейді. <a href="#/notes">Журналға өту →</a></li>
         </ol>
         <div class="panel pad">
@@ -259,16 +280,19 @@
   </dialog>
 
   <script src="js/calc.js"></script>
+  <script src="js/model.js"></script>
   <script src="js/data.js"></script>
   <script src="js/format.js"></script>
   <script src="js/store.js"></script>
   <script src="js/chart.js"></script>
+  <script src="js/plots.js"></script>
   <script src="js/app.js"></script>
   <script src="js/view-calc.js"></script>
   <script src="js/view-map.js"></script>
   <script src="js/view-prices.js"></script>
   <script src="js/view-notes.js"></script>
   <script src="js/view-method.js"></script>
+  <script src="js/view-model.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

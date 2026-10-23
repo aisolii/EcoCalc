@@ -20,6 +20,9 @@
       mapPointId: null,
       step: 1,
       resultTab: 'compare',
+      model: { days: '', capacity: '50', season: '0', peak: '11', gManual: '', tab: 'accum',
+        spreads: { price: '', mass: '3', dist: '10', cons: '15', fuel: '2' }, n: '10000' },
+      diary: [],
       notes: [],
       journal: []
     };

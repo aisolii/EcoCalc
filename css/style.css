@@ -445,8 +445,8 @@ table { border-collapse: collapse; width: 100%; }
   }
   .menu-btn { border: 0; background: none; color: inherit; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; }
   .topbar__title { font-weight: 600; }
-  .side { transform: translateX(-100%); transition: transform .2s ease; box-shadow: 0 0 40px rgba(0, 0, 0, .3); }
-  .side.is-open { transform: none; }
+  .side { transform: translateX(-100%); transition: transform .2s ease; }
+  .side.is-open { transform: none; box-shadow: 0 0 40px rgba(0, 0, 0, .3); }
   .main { margin-left: 0; padding: 20px 16px 32px; }
   .stepper { grid-template-columns: repeat(4, auto); overflow-x: auto; }
   .stepper button { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
@@ -489,3 +489,60 @@ table { border-collapse: collapse; width: 100%; }
   input, select { border: 0 !important; background: none !important; box-shadow: none !important; }
 }
 .journal tbody th, .journal td:nth-child(3) { min-width: 150px; }
+
+/* ---------- математикалық модель ---------- */
+.params { display: grid; grid-template-columns: 1.1fr repeat(5, minmax(0, 1fr)); gap: 12px 16px; align-items: end; margin-bottom: 10px; }
+.param-g { align-self: stretch; padding: 8px 12px; background: var(--accent-soft); border-radius: var(--r); }
+.param-g__v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mtabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 18px 0 16px; }
+.mtabs button { display: grid; gap: 2px; text-align: left; padding: 10px 12px; cursor: pointer; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); }
+.mtabs button b { font-size: 14.5px; font-weight: 600; }
+.mtabs button span { font-size: 12px; color: var(--ink-3); }
+.mtabs button:hover { border-color: var(--ink-3); }
+.mtabs button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 -3px 0 var(--accent); }
+.qa { margin-bottom: 16px; padding: 16px 20px; background: var(--paper); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: var(--r); }
+.qa__q { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+.qa__a { margin-top: 6px; font-size: 16.5px; line-height: 1.6; max-width: 92ch; }
+.big-inline { font-size: 1.35em; }
+.math { margin-top: 16px; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 18px; }
+.math summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.math[open] summary { margin-bottom: 10px; }
+.math p { margin-top: 8px; font-size: 14.5px; color: var(--ink-2); max-width: 92ch; }
+.math .limits { margin-top: 8px; }
+.eq { font: 15px/1.6 var(--mono); color: var(--ink) !important; background: var(--bg); padding: 8px 12px; border-radius: var(--r); overflow-x: auto; white-space: nowrap; }
+.sens { list-style: none; display: grid; gap: 8px; margin-bottom: 10px; }
+.sens li { display: grid; grid-template-columns: 140px 1fr 56px; gap: 10px; align-items: center; font-size: 14px; }
+.sens__bar { height: 10px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.sens__bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.tbl tr.is-best > * { background: var(--accent-soft); }
+.diary input { min-height: 34px; padding: 0 8px; border: 1px solid var(--rule-2); border-radius: var(--r); background: var(--paper); font-size: 14px; }
+.diary td.num input { width: 110px; text-align: right; }
+.lg--ref { border-color: var(--warn); border-top-style: dotted; border-top-width: 3px; }
+.lg--star { width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; vertical-align: -1px; }
+.lg--dot { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--ink-2); vertical-align: -1px; }
+.chart__ref { stroke: var(--warn); stroke-width: 2; stroke-dasharray: 2 4; stroke-linecap: round; }
+.chart__cap { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 6 3; }
+.chart__zero { stroke: var(--ink); stroke-width: 1.5; }
+.chart__bar { fill: var(--accent); }
+.chart__bar:hover { fill: color-mix(in srgb, var(--accent) 75%, var(--ink)); }
+.chart__dot { fill: var(--ink-2); stroke: var(--paper); stroke-width: 2; }
+.model-line { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: flex-end; margin-top: 14px; padding: 12px 14px; background: var(--bg); border-radius: var(--r); }
+.model-line > div { display: grid; }
+.model-line span { font-size: 12.5px; color: var(--ink-3); }
+.model-line b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.model-line small { font-size: 12px; color: var(--ink-3); }
+.model-line .link { margin-left: auto; }
+.field--days { margin-top: 12px; max-width: 520px; grid-template-columns: 1fr 120px; align-items: center; }
+.field--days small { display: block; font-size: 12px; color: var(--ink-3); }
+@media (max-width: 1100px) {
+  .params { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mtabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .params, .mtabs { grid-template-columns: 1fr 1fr; }
+  .param-g { grid-column: 1 / -1; }
+  .sens li { grid-template-columns: 110px 1fr 48px; }
+  .field--days { grid-template-columns: 1fr; }
+  .model-line .link { margin-left: 0; }
+}
+@media print { .mtabs, .math summary { display: none; } .math { display: block; } }

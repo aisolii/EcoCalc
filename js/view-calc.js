@@ -48,6 +48,8 @@
         <tbody>${rows}</tbody>
       </table></div>
       <p class="total-line">Барлығы: <b id="massTotal">0 кг</b></p>
+      <label class="field field--days"><span>Бұл шикізат неше күнде жиналды? <small>міндетті емес — математикалық модель жиналу жылдамдығын есептейді</small></span>
+        <input type="number" min="0" step="1" inputmode="decimal" id="collectDays" value="${esc((st().model || {}).days || '')}" placeholder="күн"></label>
       <p class="error" id="massError" hidden></p>
       <div class="actions">
         ${group ? `<button class="btn" type="button" id="addParticipant">+ ${esc(App.WHO[st().who].unit)} қосу</button>` : ''}
@@ -149,6 +151,7 @@
         <div><dt>Жанармай</dt><dd>${walk ? '—' : F.money(best.fuelCost)}</dd></div>
         <div><dt>Қосымша жүріс</dt><dd>${walk ? '—' : F.km(best.distanceKm)}</dd></div>
       </dl>
+      ${modelLine()}
       ${partial && best.notAccepted.length ? `<p class="hint">Бұл пункт қабылдамайды: ${App.listNames(best.notAccepted)}.</p>` : ''}
       <div class="actions">
         <button class="btn btn--primary" type="button" data-route="${p.id}">Маршрутты көру</button>
@@ -156,6 +159,19 @@
         <button class="btn btn--ghost" type="button" id="printBtn">Басып шығару</button>
       </div>
     </div>`;
+  }
+
+  function modelLine() {
+    if (!App.modelQuick) return '';
+    const q = App.modelQuick();
+    if (!q) return '';
+    const risk = q.risk
+      ? `<div><span>Ақталу ықтималдығы</span><b class="${q.risk.pPositive >= 0.5 ? 'pos' : 'neg'}">${F.pct(q.risk.pPositive * 100)}</b><small>Монте-Карло, ${F.num(q.risk.n, 0)} сынақ</small></div>`
+      : '';
+    const iv = q.interval
+      ? `<div><span>Оңтайлы өткізу аралығы</span><b>${F.num(q.interval.T, 0)} күн</b><small>${F.kg(q.interval.m)}, ${F.money(q.interval.J)}/күн</small></div>`
+      : '<div><span>Оңтайлы өткізу аралығы</span><b>—</b><small>2-қадамда «неше күнде жиналды» өрісін толтырыңыз</small></div>';
+    return `<div class="model-line">${risk}${iv}<a class="link" href="#/model">Математикалық модель →</a></div>`;
   }
 
   function warnings(ev) {
@@ -446,6 +462,7 @@
     if (d.mass) { byId(st().participants, d.mass).masses[d.mat] = el.value; updateMass(); }
     else if (d.pname) byId(st().participants, d.pname).name = el.value;
     else if (d.dist) { App.pointById(d.dist)[d.key] = el.value; updateCarErrors(); }
+    else if (el.id === 'collectDays') { st().model = Object.assign(st().model || {}, { days: el.value }); }
     else if (el.id === 'consumption' || el.id === 'fuelPrice') { st().transport[el.id] = el.value; updateCarErrors(); }
     else if (d.pdist) { byId(st().participants, d.pdist).distanceKm = el.value; refreshJoint(); }
     else if (el.id === 'jointDist') { st().joint.distanceKm = el.value; refreshJoint(); }
