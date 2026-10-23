@@ -31,8 +31,9 @@
   // ---------- деректерге қатысты көмекшілер ----------
   App.matName = (id) => (st().materials.find((m) => m.id === id) || { name: id }).name;
   App.pointById = (id) => st().points.find((p) => p.id === id);
-  App.isGroup = () => st().who !== 'family';
-  App.participants = () => (App.isGroup() ? st().participants : st().participants.slice(0, 1));
+  // Калькулятор бір жиынтықпен жұмыс істейді; бірнеше отбасы — «Бірлесу» бетінде (state.group)
+  App.isGroup = () => false;
+  App.participants = () => st().participants.slice(0, 1);
   App.totalMasses = () => C.sumMasses(App.participants().map((p) => p.masses));
   App.sumKg = (masses) => Object.values(masses).reduce((s, v) => s + (Number(v) || 0), 0);
   App.listNames = (items) => items.map((i) => F.esc(App.matName(i.matId))).join(', ');
@@ -73,8 +74,11 @@
     const masses = App.totalMasses();
     const t = App.transport();
     const cmp = C.comparePoints(App.comparedPoints(), masses, t);
-    const focus = cmp.evals.find((e) => e.pointId === st().focusId) || cmp.bestFull || cmp.bestAny || cmp.evals[0] || null;
-    return { masses, t, cmp, focus, total: App.sumKg(masses) };
+    // Пайдаланушы 4-сұрақта таңдаған пункт
+    const chosenPoint = App.pointById((st().wiz || {}).pointId);
+    const chosen = chosenPoint ? C.evaluatePoint(chosenPoint, masses, t) : null;
+    const focus = cmp.evals.find((e) => e.pointId === st().focusId) || chosen || cmp.bestFull || cmp.bestAny || cmp.evals[0] || null;
+    return { masses, t, cmp, chosen, focus, total: App.sumKg(masses) };
   };
 
   App.statusTag = (p) => (p.confirmed

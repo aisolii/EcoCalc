@@ -91,7 +91,7 @@
   /** Калькулятордағы ағымдағы болжамды журналға жазады. */
   App.addJournalRecord = () => {
     const ev = App.evaluate();
-    const best = ev.cmp.bestFull || ev.cmp.bestAny;
+    const best = ev.chosen && ev.chosen.revenue > 0 ? ev.chosen : ev.cmp.bestFull || ev.cmp.bestAny;
     if (!best) { alert('Болжамды сақтау үшін бағасы мен қашықтығы белгілі пункт керек.'); return false; }
     const caseName = App.participants().map((p) => p.name).join(', ');
     st().journal.push({

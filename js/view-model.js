@@ -46,7 +46,7 @@
   App.modelContext = () => {
     const m = model();
     const ev = App.evaluate();
-    const best = ev.cmp.bestFull || ev.cmp.bestAny;
+    const best = ev.chosen && ev.chosen.revenue > 0 ? ev.chosen : ev.cmp.bestFull || ev.cmp.bestAny;
     const diary = diaryFit();
     let g = null;
     let gSrc = 'none';
@@ -109,14 +109,14 @@
     root.querySelector('#modelParams').innerHTML = `
       <div class="params">
         <div class="param-g">
-          <p class="hint">Шикізаттың жиналу жылдамдығы g</p>
+          <p class="hint">Күніне қанша кг жиналады (g)</p>
           <p class="param-g__v">${ctx.g ? kgd(ctx.g) : '—'}</p>
           <p class="hint param-g__src">${gNote}</p>
         </div>
-        <label class="field"><span>g өзіңіз енгізу, кг/күн</span><input type="number" min="0" step="0.01" inputmode="decimal" data-m="gManual" value="${esc(m.gManual)}" placeholder="бос — автоматты"></label>
-        <label class="field"><span>Неше күнде жиналды (калькулятордағы масса)</span><input type="number" min="0" step="1" inputmode="decimal" data-m="days" value="${esc(m.days)}" placeholder="мысалы, 30"></label>
-        <label class="field"><span>Сақтау орны M, кг</span><input type="number" min="0" step="1" inputmode="decimal" data-m="capacity" value="${esc(m.capacity)}" placeholder="бос — шексіз" title="Үйде (балкон, қойма) сақтауға болатын ең көп масса"></label>
-        <label class="field"><span>Маусымдық ауытқу, ±%</span><input type="number" min="0" max="90" step="5" inputmode="decimal" data-m="season" value="${esc(m.season)}"></label>
+        <label class="field"><span>Өзіңіз жазу, кг/күн</span><input type="number" min="0" step="0.01" inputmode="decimal" data-m="gManual" value="${esc(m.gManual)}" placeholder="бос — автоматты"></label>
+        <label class="field"><span>Есептеудегі шикізат неше күнде жиналды</span><input type="number" min="0" step="1" inputmode="decimal" data-m="days" value="${esc(m.days)}" placeholder="мысалы, 30"></label>
+        <label class="field"><span>Үйде ең көбі қанша кг сыяды (M)</span><input type="number" min="0" step="1" inputmode="decimal" data-m="capacity" value="${esc(m.capacity)}" placeholder="бос — шексіз" title="Үйде (балкон, қойма) сақтауға болатын ең көп масса"></label>
+        <label class="field"><span>Маусымға қарай өзгеру, ±%</span><input type="number" min="0" max="90" step="5" inputmode="decimal" data-m="season" value="${esc(m.season)}"></label>
         <label class="field"><span>Ең көп жиналатын ай</span><select data-m="peak">${MONTHS.map((n, i) => `<option value="${i}"${String(i) === String(m.peak) ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       </div>
       ${ctx.best ? `<p class="hint">Пункт: <b>${esc(App.pointById(ctx.best.pointId).name)}</b> · 1 кг жиналған шикізаттың орташа бағасы p̄ = ${F.num(ctx.pbar)} ₸/кг · бір сапар шығыны C = ${F.money(ctx.C)}. Деректер калькулятордан алынады.</p>`
@@ -469,7 +469,7 @@
       manual: 'қолмен енгізілген',
       diary: 'жинау күнделігі бойынша (регрессия)',
       days: `калькулятордан: ${F.kg(ctx.ev.total)} / ${ctx.m.days} күн`,
-      none: 'белгісіз — төменде енгізіңіз'
+      none: 'белгісіз — «неше күнде жиналды» өрісін толтырыңыз'
     }[ctx.gSrc];
   }
 

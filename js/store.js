@@ -19,6 +19,8 @@
       route: { from: '' },
       mapPointId: null,
       step: 1,
+      wiz: { mats: [], pointId: 'ls-ualikhanov', details: false },
+      group: { members: [], distanceKm: '', pointId: null },
       resultTab: 'compare',
       model: { days: '', capacity: '50', season: '0', peak: '11', gManual: '', tab: 'accum',
         spreads: { price: '', mass: '3', dist: '10', cons: '15', fuel: '2' }, n: '10000' },

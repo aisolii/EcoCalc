@@ -1,4 +1,4 @@
-/* Калькулятор: төрт қадам және нәтиже */
+/* Калькулятор: бір экранда — бір сұрақ. Барлық есептеулер calc.js және model.js файлдарында. */
 (function () {
   'use strict';
   const App = window.App;
@@ -6,308 +6,325 @@
   const st = () => App.state;
   const root = $('[data-view="calc"]');
   const body = $('#calcBody');
+  const STEPS = 5; // 4 сұрақ + жауап
+
+  // Таразы болмаса — санап есептеу (шамамен)
+  const COUNTERS = {
+    pet: { unit: 'бөтелке', kg: 0.03, text: '1 пластик бөтелке ≈ 30 г (0,5–2 л орташа)' },
+    alu: { unit: 'банка', kg: 0.015, text: '1 алюминий банка ≈ 15 г' },
+    paper: { unit: 'пачка А4', kg: 2.5, text: '500 парақтық 1 пачка А4 қағаз ≈ 2,5 кг' }
+  };
+
+  const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const ICON = {
+    walk: svg('<circle cx="13" cy="4.5" r="1.8"/><path d="M9 21l2.5-6.5L14 17v4M11.5 14.5l1-5L9 11v3M12.5 9.5l3 3 2.5.5"/>'),
+    separate: svg('<path d="M4 16V12l2-5h12l2 5v4z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/><path d="M4 12h16"/>'),
+    onway: svg('<path d="M4 18c4-1 5-5 8-6s5 1 8-3"/><circle cx="12" cy="12" r="2.2"/><path d="M18 6h2v2"/>'),
+    phone: svg('<path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z"/>'),
+    route: svg('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>')
+  };
 
   const MODES = [
-    { id: 'walk', title: 'Жаяу немесе велосипедпен', text: 'Жанармай жұмсалмайды, бірақ уақыт пен күш кетеді.' },
-    { id: 'separate', title: 'Көлікпен арнайы бару', text: 'Пунктке әдейі барып-қайту. Қашықтық екі есе алынады.' },
-    { id: 'onway', title: 'Жол-жөнекей соғу', text: 'Басқа жаққа бара жатып соғу. Тек қосымша жол есептеледі.' }
+    { id: 'walk', title: 'Жаяу немесе велосипедпен', text: 'Бензин жұмсалмайды' },
+    { id: 'separate', title: 'Көлікпен арнайы барамын', text: 'Тек осы үшін барып-қайтамын' },
+    { id: 'onway', title: 'Жол-жөнекей соғамын', text: 'Басқа жаққа бара жатып соғамын' }
   ];
 
+  const wiz = () => {
+    st().wiz = Object.assign({ mats: [], pointId: 'ls-ualikhanov', details: false }, st().wiz || {});
+    // Бұрын енгізілген массасы бар материалдар да таңдалған болып саналады
+    const masses = st().participants[0].masses;
+    for (const id of Object.keys(masses)) if (Number(masses[id]) > 0 && !st().wiz.mats.includes(id)) st().wiz.mats.push(id);
+    return st().wiz;
+  };
+  const masses = () => st().participants[0].masses;
+  const car = () => st().transport.mode !== 'walk';
+  const kmKey = () => (st().transport.mode === 'separate' ? 'oneWayKm' : 'detourKm');
+  const chosenPoint = () => App.pointById(wiz().pointId);
+
   // =====================================================================
-  //  Қадамдар
+  //  1-сұрақ: не жинадыңыз?
   // =====================================================================
-  function step1() {
-    const choices = Object.entries(App.WHO).map(([id, w]) => `
-      <button type="button" class="choice" data-who="${id}" aria-pressed="${st().who === id}">
-        <b>${w.label}</b><span>${w.hint}</span>
+  function q1() {
+    const sel = wiz().mats;
+    const tiles = st().materials.map((m) => `
+      <button type="button" class="tile" data-mat-toggle="${m.id}" aria-pressed="${sel.includes(m.id)}">
+        <b>${esc(m.name)}</b><span>${esc(m.hint || '')}</span>
       </button>`).join('');
-    return `<div class="panel pad step">
-      <h2 class="step__title">Шикізатты кім жинайды?</h2>
-      <p class="hint">Бір нұсқаны таңдап, «Келесі» батырмасын басыңыз.</p>
-      <div class="choices">${choices}</div>
-    </div>`;
-  }
-
-  function step2() {
-    const parts = App.participants();
-    const group = App.isGroup();
-    const canDelete = group && parts.length > 1;
-    const head = parts.map((p) => `<th class="num">
-        <span class="pname"><input data-pname="${p.id}" value="${esc(p.name)}" aria-label="Қатысушы атауы">${canDelete ? `<button type="button" class="del" data-delp="${p.id}" aria-label="${esc(p.name)} өшіру">×</button>` : ''}</span>
-      </th>`).join('');
-    const rows = st().materials.map((m) => {
-      const cells = parts.map((p) => `<td class="num"><input type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"
-        data-mass="${p.id}" data-mat="${m.id}" value="${esc(p.masses[m.id] ?? '')}" aria-label="${esc(m.name)}, ${esc(p.name)}, кг"></td>`).join('');
-      return `<tr><th scope="row"><span class="mat">${esc(m.name)}</span><span class="mat__hint">${esc(m.hint || '')}</span></th>${cells}${group ? `<td class="num total" data-total="${m.id}">—</td>` : ''}</tr>`;
-    }).join('');
-    return `<div class="panel pad step">
-      <h2 class="step__title">Не жиналды?</h2>
-      <p class="hint">Әр материалдың массасын килограммен жазыңыз. Жоқ материалды бос қалдырыңыз. Тұрмыстық таразымен өлшеуге болады.</p>
-      <div class="scroll"><table class="mass">
-        <thead><tr><th>Материал</th>${head}${group ? '<th class="num">Барлығы, кг</th>' : ''}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>
-      <p class="total-line">Барлығы: <b id="massTotal">0 кг</b></p>
-      <label class="field field--days"><span>Бұл шикізат неше күнде жиналды? <small>міндетті емес — математикалық модель жиналу жылдамдығын есептейді</small></span>
-        <input type="number" min="0" step="1" inputmode="decimal" id="collectDays" value="${esc((st().model || {}).days || '')}" placeholder="күн"></label>
-      <p class="error" id="massError" hidden></p>
-      <div class="actions">
-        ${group ? `<button class="btn" type="button" id="addParticipant">+ ${esc(App.WHO[st().who].unit)} қосу</button>` : ''}
-        <form class="addmat" id="addMatForm">
-          <input name="mat" placeholder="Тізімде жоқ материал" aria-label="Жаңа материал атауы">
-          <button class="btn btn--ghost" type="submit">+ Материал</button>
-        </form>
-      </div>
-    </div>`;
-  }
-
-  function step3() {
-    const mode = st().transport.mode;
-    const choices = MODES.map((m) => `
-      <button type="button" class="choice" data-mode="${m.id}" aria-pressed="${mode === m.id}">
-        <b>${m.title}</b><span>${m.text}</span>
-      </button>`).join('');
-    const key = mode === 'separate' ? 'oneWayKm' : 'detourKm';
-    const distLabel = mode === 'separate' ? 'бір бағытқа, км' : 'қосымша жол, км';
-    const points = st().points.map((p) => `
-      <div class="pick${p.inCompare ? ' is-on' : ''}">
-        <label class="pick__check"><input type="checkbox" data-include="${p.id}"${p.inCompare ? ' checked' : ''}>
-          <span><b>${esc(p.name)}</b><small>${esc(p.address || '')}</small></span></label>
-        ${mode === 'walk' ? '' : `<label class="pick__dist"><span>${distLabel}</span>
-          <input type="number" min="0" step="0.1" inputmode="decimal" data-dist="${p.id}" data-key="${key}" value="${esc(p[key] ?? '')}" placeholder="?"></label>`}
-        <a class="link" href="#/map" data-mapgo="${p.id}">Картадан</a>
-      </div>`).join('');
-    return `<div class="panel pad step">
-      <h2 class="step__title">Пунктке қалай жеткізесіз?</h2>
-      <div class="choices">${choices}</div>
-      <div class="pair${mode === 'walk' ? ' is-off' : ''}">
-        <label class="field"><span>Көліктің отын шығыны, л/100 км</span><input type="number" inputmode="decimal" min="0" step="0.1" id="consumption" value="${esc(st().transport.consumption)}"></label>
-        <label class="field"><span>Жанармай бағасы, ₸/л (АИ-92)</span><input type="number" inputmode="decimal" min="0" step="1" id="fuelPrice" value="${esc(st().transport.fuelPrice)}" placeholder="бекеттегі баға"></label>
-      </div>
-      <p class="error" id="carError" hidden></p>
-    </div>
-    <div class="panel pad step">
-      <h2 class="step__title">Қай пункттерді салыстырамыз?</h2>
-      <p class="hint">${mode === 'walk' ? 'Белгіленген пункттер салыстырылады.' : 'Белгілеп, әр пунктке дейінгі қашықтықты жазыңыз. Білмесеңіз, «Картадан» сілтемесін басыңыз — Google Maps маршрутындағы километрді осында жазыңыз.'}</p>
-      <div class="picks">${points}</div>
+    return `<div class="ask">
+      <p class="ask__n">1-сұрақ</p>
+      <h2>Не жинадыңыз?</h2>
+      <p class="ask__help">Жиналған шикізаттың түрлерін басып белгілеңіз. Бірнешеуін таңдауға болады.</p>
+      <div class="tiles">${tiles}</div>
     </div>`;
   }
 
   // =====================================================================
-  //  Нәтиже
+  //  2-сұрақ: қанша кг?
   // =====================================================================
-  function step4() {
-    const errs = App.inputErrors();
-    if (errs.length) {
-      return `<div class="panel pad"><p class="error">${errs.map((e) => esc(e.text)).join('<br>')}</p>
-        <p class="hint">Теріс немесе сан емес мәндер болғанда есеп жүргізілмейді. Алдыңғы қадамдарға оралып, түзетіңіз.</p></div>`;
-    }
-    const ev = App.evaluate();
-    if (!ev.total) {
-      return `<div class="panel pad hero hero--neutral"><h2>Алдымен массаны енгізіңіз</h2>
-        <p>2-қадамда жиналған шикізаттың массасын жазыңыз.</p>
-        <button class="btn btn--primary" type="button" data-step="2">2-қадамға өту</button></div>`;
-    }
-    const tabs = [['compare', 'Пункттерді салыстыру'], ['threshold', 'Қанша жинау керек'], ...(App.isGroup() && st().participants.length > 1 ? [['joint', 'Бірлесіп өткізу']] : []), ['steps', 'Есеп қадамдары']];
-    if (!tabs.some(([id]) => id === st().resultTab)) st().resultTab = 'compare';
-    return `${hero(ev)}${warnings(ev)}
-      <div class="tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" data-tab="${id}" aria-selected="${st().resultTab === id}">${label}</button>`).join('')}</div>
-      <div class="tab-body" id="tabBody">${tabBody(ev)}</div>`;
-  }
-
-  function hero(ev) {
-    const { cmp, t } = ev;
-    const best = cmp.bestFull || cmp.bestAny;
-    if (!best) {
-      return `<div class="panel pad hero hero--neutral">
-        <p class="hero__kicker">Нәтиже</p>
-        <h2>Ең тиімді пунктті анықтау әзірге мүмкін емес</h2>
-        <p>Ол үшін салыстырылатын пункттің кемінде біреуінде сіздің материалыңыздың <b>бағасы</b> және оған дейінгі <b>қашықтық</b> белгілі болуы керек. Төмендегі ескертулерді қараңыз.</p>
-        <div class="actions"><a class="btn btn--primary" href="#/prices">Бағаларды толтыру</a><a class="btn" href="#/map">Қашықтықты анықтау</a></div>
+  function q2() {
+    const rows = wiz().mats.map((id) => {
+      const m = st().materials.find((x) => x.id === id);
+      if (!m) return '';
+      const cnt = COUNTERS[id];
+      return `<div class="kg-row">
+        <div class="kg-row__top">
+          <label for="kg-${id}"><b>${esc(m.name)}</b></label>
+          <div class="stepper-in">
+            <button type="button" class="round" data-bump="${id}" data-delta="-1" aria-label="1 кг азайту">−</button>
+            <input id="kg-${id}" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" data-kg="${id}" value="${esc(masses()[id] ?? '')}">
+            <span class="unit">кг</span>
+            <button type="button" class="round" data-bump="${id}" data-delta="1" aria-label="1 кг қосу">+</button>
+          </div>
+        </div>
+        ${cnt ? `<details class="counter"><summary>Таразы жоқ па? Санап есептеңіз</summary>
+          <div class="counter__body">
+            <input type="number" inputmode="numeric" min="0" step="1" placeholder="саны" data-count="${id}" aria-label="${cnt.unit} саны">
+            <span>${cnt.unit} = <b data-count-out="${id}">0 кг</b></span>
+            <button type="button" class="btn btn--small" data-count-add="${id}">Қосу</button>
+            <p class="hint">${cnt.text} (шамамен)</p>
+          </div></details>` : ''}
       </div>`;
-    }
-    const adv = C.advice(best, t.mode);
-    const p = App.pointById(best.pointId);
-    const title = { covers: 'Қазір өткізуге болады', not_covers: 'Әзірге жинай беріңіз', walk: 'Жаяу өткізуге болады', no_mass: '' }[adv.code];
-    const walk = t.mode === 'walk';
-    const partial = !cmp.bestFull;
-    return `<div class="panel pad hero hero--${adv.tone}">
-      <p class="hero__kicker">Нәтиже · барлығы ${F.kg(ev.total)}</p>
-      <h2>${title}</h2>
-      <p>${App.ADVICE[adv.code]}</p>
-      <div class="hero__grid">
-        <div>
-          <p class="hero__label">${partial ? 'Нәтижесі ең жоғары пункт (бәрін қабылдамайды)' : 'Ұсынылатын пункт'}</p>
-          <p class="hero__point">${esc(p.name)}</p>
-          <p class="hint">${esc(p.address || '')} ${App.statusTag(p)}</p>
-        </div>
-        <div>
-          <p class="hero__label">Жанармай шығынын шегергендегі нәтиже</p>
-          <p class="figure ${App.sign(best.result)}">${F.money(best.result)}</p>
-        </div>
-      </div>
-      <dl class="kv kv--row">
-        <div><dt>Түсім</dt><dd>${F.money(best.revenue)}</dd></div>
-        <div><dt>Жанармай</dt><dd>${walk ? '—' : F.money(best.fuelCost)}</dd></div>
-        <div><dt>Қосымша жүріс</dt><dd>${walk ? '—' : F.km(best.distanceKm)}</dd></div>
-      </dl>
-      ${modelLine()}
-      ${partial && best.notAccepted.length ? `<p class="hint">Бұл пункт қабылдамайды: ${App.listNames(best.notAccepted)}.</p>` : ''}
-      <div class="actions">
-        <button class="btn btn--primary" type="button" data-route="${p.id}">Маршрутты көру</button>
-        <button class="btn" type="button" id="toJournal">Болжамды журналға жазу</button>
-        <button class="btn btn--ghost" type="button" id="printBtn">Басып шығару</button>
-      </div>
+    }).join('');
+    const days = (st().model || {}).days || '';
+    return `<div class="ask">
+      <p class="ask__n">2-сұрақ</p>
+      <h2>Әрқайсысы қанша килограмм?</h2>
+      <p class="ask__help">Тұрмыстық таразымен өлшеңіз (пакетпен бірге өлшеп, пакеттің салмағын шегеріңіз).</p>
+      <div class="kg-list">${rows}</div>
+      <p class="total-big">Барлығы: <b id="massTotal">0 кг</b></p>
+      <p class="error" id="massError" hidden></p>
+      <label class="field field--days"><span>Бұл қанша күнде жиналды? <small>Міндетті емес. Жазсаңыз, сайт қанша күнде бір рет өткізу тиімді екенін есептейді.</small></span>
+        <span class="with-unit"><input type="number" min="0" step="1" inputmode="numeric" id="collectDays" value="${esc(days)}" placeholder="мысалы, 30"><span class="unit">күн</span></span></label>
     </div>`;
   }
 
-  function modelLine() {
-    if (!App.modelQuick) return '';
-    const q = App.modelQuick();
-    if (!q) return '';
-    const risk = q.risk
-      ? `<div><span>Ақталу ықтималдығы</span><b class="${q.risk.pPositive >= 0.5 ? 'pos' : 'neg'}">${F.pct(q.risk.pPositive * 100)}</b><small>Монте-Карло, ${F.num(q.risk.n, 0)} сынақ</small></div>`
-      : '';
-    const iv = q.interval
-      ? `<div><span>Оңтайлы өткізу аралығы</span><b>${F.num(q.interval.T, 0)} күн</b><small>${F.kg(q.interval.m)}, ${F.money(q.interval.J)}/күн</small></div>`
-      : '<div><span>Оңтайлы өткізу аралығы</span><b>—</b><small>2-қадамда «неше күнде жиналды» өрісін толтырыңыз</small></div>';
-    return `<div class="model-line">${risk}${iv}<a class="link" href="#/model">Математикалық модель →</a></div>`;
+  // =====================================================================
+  //  3-сұрақ: қалай барасыз?
+  // =====================================================================
+  function q3() {
+    const mode = st().transport.mode;
+    return `<div class="ask">
+      <p class="ask__n">3-сұрақ</p>
+      <h2>Пунктке қалай барасыз?</h2>
+      <div class="big-choices">${MODES.map((m) => `
+        <button type="button" class="big-choice" data-mode="${m.id}" aria-pressed="${mode === m.id}">
+          <span class="big-choice__icon">${ICON[m.id]}</span>
+          <span><b>${m.title}</b><small>${m.text}</small></span>
+        </button>`).join('')}</div>
+    </div>`;
   }
 
-  function warnings(ev) {
-    const { t } = ev;
-    const list = [];
-    const compared = App.comparedPoints();
-    if (!compared.length) list.push('Салыстыруға бірде-бір пункт таңдалмаған — 3-қадамда белгілеңіз.');
-    if (t.mode !== 'walk' && st().transport.fuelPrice === '') list.push('Жанармай бағасы енгізілмеген (3-қадам), сондықтан жанармай шығыны 0 деп алынды.');
-    const noDist = ev.cmp.evals.filter((e) => !e.distanceKnown).map((e) => esc(App.pointById(e.pointId).name));
-    if (noDist.length) list.push(`Қашықтығы енгізілмеген: ${noDist.join(', ')}. Олар ең тиімді пунктті таңдауға қатыспайды. <a href="#/map">Картадан анықтау →</a>`);
-    const noPrice = ev.cmp.evals.filter((e) => e.hasMass && e.revenue === 0).map((e) => esc(App.pointById(e.pointId).name));
-    if (noPrice.length) list.push(`Сіздің материалдарыңыздың бағасы белгісіз: ${noPrice.join(', ')}. <a href="#/prices">Бағаларды нақтылау →</a>`);
-    if (compared.some((p) => !p.confirmed)) list.push('Бағалар ашық дереккөздерден алынған және пункттермен расталмаған — барар алдында қоңырау шалыңыз.');
-    if (!list.length) return '';
-    return `<div class="panel pad warn-panel"><h3>Назар аударыңыз</h3><ul class="warns">${list.map((w) => `<li>${w}</li>`).join('')}</ul></div>`;
+  // =====================================================================
+  //  4-сұрақ: қай пункт, қанша км?
+  // =====================================================================
+  function q4() {
+    const sel = wiz().mats;
+    const key = kmKey();
+    const relevant = st().points.filter((p) => sel.some((id) => Object.prototype.hasOwnProperty.call(p.prices || {}, id)));
+    const priced = (p) => sel.filter((id) => typeof (p.prices || {})[id] === 'number').length;
+    relevant.sort((a, b) => priced(b) - priced(a));
+    if (!relevant.some((p) => p.id === wiz().pointId) && relevant[0]) wiz().pointId = relevant[0].id;
+    const hidden = st().points.length - relevant.length;
+    const cards = relevant.map((p) => {
+      const on = p.id === wiz().pointId;
+      const chips = sel.map((id) => {
+        const name = esc(App.matName(id));
+        if (!Object.prototype.hasOwnProperty.call(p.prices || {}, id)) return `<span class="chip chip--no">${name}: қабылдамайды</span>`;
+        const price = p.prices[id];
+        return price == null ? `<span class="chip chip--unk">${name}: бағасы белгісіз</span>` : `<span class="chip chip--ok">${name}: ${F.num(price)} ₸/кг</span>`;
+      }).join('');
+      const tel = p.phone ? `<a class="link" href="tel:${esc(p.phone.replace(/\s/g, ''))}">${esc(p.phone)}</a>` : '';
+      return `<div class="place${on ? ' is-on' : ''}">
+        <label class="place__head">
+          <input type="radio" name="place" value="${p.id}"${on ? ' checked' : ''} data-place="${p.id}">
+          <span><b>${esc(p.name)}</b><small>${esc(p.address || '')}</small></span>
+        </label>
+        <div class="chips">${chips}</div>
+        ${!priced(p) ? `<p class="hint">Бағасын білу үшін қоңырау шалыңыз${tel ? ': ' + tel : ''}.</p>` : ''}
+        ${on && car() ? `<div class="km-box">
+          <label class="field"><span>${st().transport.mode === 'separate' ? 'Үйден пунктке дейін қанша км? (бір жаққа)' : 'Жолыңыз қанша км ұзарады?'}</span>
+            <span class="with-unit"><input type="number" min="0" step="0.1" inputmode="decimal" data-km="${p.id}" data-key="${key}" value="${esc(p[key] ?? '')}" placeholder="км"><span class="unit">км</span></span></label>
+          <a class="btn btn--small" href="${esc(App.directionsUrl(p))}" target="_blank" rel="noopener">Google Maps-та қашықтықты көру ↗</a>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="ask">
+      <p class="ask__n">4-сұрақ</p>
+      <h2>Қай пунктке апарасыз?</h2>
+      <p class="ask__help">Пунктті таңдаңыз. Жасыл — бағасы белгілі, сары — бағасын қоңырау шалып білу керек.</p>
+      <div class="places">${cards || '<p class="hint">Таңдалған материалдарды қабылдайтын пункт тізімде жоқ.</p>'}</div>
+      ${hidden > 0 ? `<p class="hint">Тағы ${hidden} пункт сіздің материалдарыңызды қабылдамайды. Барлық пункт — <a href="#/prices">Бағалар</a> бетінде.</p>` : ''}
+      ${car() ? `<div class="fuel-box">
+        <h3>Көлік туралы</h3>
+        <div class="pair">
+          <label class="field"><span>1 литр бензин қанша тұрады?</span>
+            <span class="with-unit"><input type="number" min="0" step="1" inputmode="decimal" id="fuelPrice" value="${esc(st().transport.fuelPrice)}" placeholder="бекеттегі баға"><span class="unit">₸</span></span></label>
+          <label class="field"><span>Көлік 100 км-ге неше литр жұмсайды? <small>Білмесеңіз, 8 қалдырыңыз — жеңіл көлік үшін орташа.</small></span>
+            <span class="with-unit"><input type="number" min="0" step="0.1" inputmode="decimal" id="consumption" value="${esc(st().transport.consumption)}"><span class="unit">л</span></span></label>
+        </div>
+      </div>` : ''}
+      <p class="error" id="q4Error" hidden></p>
+    </div>`;
   }
 
-  function tabBody(ev) {
-    switch (st().resultTab) {
-      case 'threshold': return thresholdTab(ev);
-      case 'joint': return jointTab(ev);
-      case 'steps': return stepsTab(ev);
-      default: return compareTab(ev);
+  // =====================================================================
+  //  Жауап
+  // =====================================================================
+  function answer() {
+    const errs = App.inputErrors();
+    if (errs.length) return `<div class="verdict-card verdict-card--neutral"><h2>Деректерді түзетіңіз</h2><p>${errs.map((e) => esc(e.text)).join('<br>')}</p></div>`;
+    const ev = App.evaluate();
+    const e = ev.chosen;
+    const p = chosenPoint();
+    if (!e || !p) return `<div class="verdict-card verdict-card--neutral"><h2>Пункт таңдалмаған</h2><p>4-сұраққа оралыңыз.</p></div>`;
+    const t = ev.t;
+    const walk = t.mode === 'walk';
+    const tel = p.phone ? `<a class="btn btn--primary" href="tel:${esc(p.phone.replace(/\s/g, ''))}">${ICON.phone}Қоңырау шалу</a>` : '';
+    const q = App.modelQuick ? App.modelQuick() : null;
+    const ctx = App.modelContext ? App.modelContext() : null;
+
+    // Бас жауап
+    let tone, title, text;
+    if (e.revenue === 0) {
+      tone = 'neutral';
+      title = 'Бұл пункттің бағасы белгісіз';
+      text = `Пункт сіздің шикізатыңызға қанша төлейтінін білмейміз. Қоңырау шалып, бағасын біліңіз де, оны «Бағалар» бетіне жазыңыз.`;
+    } else if (walk) {
+      tone = 'good';
+      title = 'Иә, апара беріңіз';
+      text = `Пункт шамамен <b>${F.money(e.revenue)}</b> төлейді. Жаяу барғанда бензинге шығын жоқ.`;
+    } else if (e.result >= 0) {
+      tone = 'good';
+      title = 'Иә, өткізуге болады';
+      text = `Бензин шығынын шегергенде шамамен <b>${F.money(e.result)}</b> қалады.`;
+    } else {
+      tone = 'bad';
+      title = 'Әзірге ерте';
+      const need = e.scale ? ev.total * e.scale - ev.total : null;
+      text = `Бензинге <b>${F.money(e.fuelCost)}</b> кетеді, ал пункт <b>${F.money(e.revenue)}</b> ғана төлейді.`;
+      if (need > 0) {
+        text += ` Тағы шамамен <b>${F.kg(need)}</b> жинаңыз`;
+        if (ctx && ctx.g) {
+          const days = window.EcoModel.timeToReach(ev.total + need, ctx.g, ctx.cap, ev.total);
+          text += Number.isFinite(days) ? ` — бұл шамамен ${F.num(days, 0)} күн.` : ' — бірақ сақтау орныңызға мұнша сыймайды.';
+        } else text += '.';
+        text += ' Немесе басқа жаққа бара жатып, жол-жөнекей соғыңыз.';
+      }
     }
+
+    const facts = [];
+    if (q && q.risk && e.revenue > 0) {
+      const k = Math.round(q.risk.pPositive * 10);
+      const SUFFIX = { 1: 'і', 2: 'сі', 3: 'і', 4: 'і', 5: 'і', 6: 'сы', 7: 'сі', 8: 'і', 9: 'ы' };
+      const share = k >= 10 ? '<b>барлығы дерлік</b>' : k <= 0 ? '<b>бірде-біреуі</b>' : `шамамен <b>${k}</b>-${SUFFIX[k]}`;
+      facts.push(`<li><b>Сенімділік:</b> бағалар мен жол өзгерсе де, 10 сапардың ${share} өзін ақтайды (ықтималдығы ${F.pct(q.risk.pPositive * 100)}). <small>Монте-Карло әдісі</small></li>`);
+    }
+    if (q && q.interval && e.revenue > 0 && q.interval.J <= 0) {
+      facts.push('<li><b>Қашан өткізу тиімді:</b> бұл пунктке арнайы сапар бір жыл ішінде де ақталмайды — жол-жөнекей соғыңыз немесе көршілермен бірге апарыңыз. <small>Оңтайландыру</small></li>');
+    } else if (q && q.interval && e.revenue > 0) {
+      facts.push(`<li><b>Қашан өткізу тиімді:</b> әр <b>${F.num(q.interval.T, 0)} күнде</b> бір рет (шамамен ${F.kg(q.interval.m)}). <small>Оңтайландыру</small></li>`);
+    } else if (e.revenue > 0 && !(ctx && ctx.g)) {
+      facts.push('<li class="muted">2-сұрақта «қанша күнде жиналды» деп жазсаңыз, сайт қанша күнде бір рет өткізу тиімді екенін есептейді.</li>');
+    }
+    if (e.notAccepted.length) facts.push(`<li><b>Бұл пункт қабылдамайды:</b> ${App.listNames(e.notAccepted)} — оларды басқа пунктке апарыңыз.</li>`);
+    if (e.unpriced.length && e.revenue > 0) facts.push(`<li><b>Бағасы белгісіз, есепке кірмеді:</b> ${App.listNames(e.unpriced)}.</li>`);
+    if (e.belowMin.length) facts.push(`<li><b>Аз, пункт қабылдамайды:</b> ${e.belowMin.map((i) => `${esc(App.matName(i.matId))} (кемінде ${F.num(i.minBatch)} кг)`).join(', ')}.</li>`);
+
+    return `<div class="verdict-card verdict-card--${tone}">
+        <p class="verdict-card__kicker">${esc(p.name)} · ${F.kg(ev.total)}</p>
+        <h2>${title}</h2>
+        <p class="verdict-card__text">${text}</p>
+      </div>
+      ${e.revenue > 0 ? `<div class="three">
+        <div><span>Пункт төлейді</span><b>${F.money(e.revenue)}</b></div>
+        <div><span>Бензинге</span><b>${walk ? '0 ₸' : F.money(e.fuelCost)}</b></div>
+        <div><span>Сізде қалады</span><b class="${App.sign(e.result)}">${F.money(e.result)}</b></div>
+      </div>` : ''}
+      ${facts.length ? `<ul class="facts">${facts.join('')}</ul>` : ''}
+      ${!p.confirmed ? `<p class="soft-warn">Баға интернеттен алынған, пункт әлі растамаған. Барар алдында қоңырау шалып нақтылаңыз.</p>` : ''}
+      <div class="answer-actions">
+        ${e.revenue === 0 ? tel : `<a class="btn btn--primary" href="${esc(App.directionsUrl(p))}" target="_blank" rel="noopener">${ICON.route}Маршрут</a>`}
+        ${e.revenue > 0 ? '<button class="btn" type="button" id="toJournal">Журналға жазу</button>' : ''}
+        <button class="btn btn--ghost" type="button" id="restart">Қайта бастау</button>
+      </div>
+      <details class="details" id="detailsBox"${wiz().details ? ' open' : ''}>
+        <summary>Толық талдау (жюриге арналған)</summary>
+        <div class="tabs" role="tablist">${[['compare', 'Барлық пункттер'], ['threshold', 'Қанша жинау керек'], ['steps', 'Формулалар']].map(([id, label]) => `<button type="button" role="tab" data-tab="${id}" aria-selected="${(st().resultTab || 'compare') === id}">${label}</button>`).join('')}</div>
+        <div class="tab-body" id="tabBody">${tabBody(ev)}</div>
+        <p class="hint">Терең математикалық модель — <a href="#/model">Ғылым → Математикалық модель</a>.</p>
+      </details>`;
   }
 
-  function focusSelect(focus) {
-    const options = App.comparedPoints().map((p) => `<option value="${p.id}"${focus && focus.pointId === p.id ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
-    return `<label class="inline-select"><span>Пункт:</span><select class="select" data-focus-select>${options}</select></label>`;
+  // ---------- толық талдау ----------
+  function tabBody(ev) {
+    if (st().resultTab === 'threshold') return thresholdTab(ev);
+    if (st().resultTab === 'steps') return stepsTab(ev);
+    return compareTab(ev);
   }
 
   function compareTab(ev) {
-    const { cmp, t, focus } = ev;
-    if (!cmp.evals.length) return '<div class="panel pad"><p class="hint">Салыстыруға пункт таңдалмаған.</p></div>';
+    const t = ev.t;
+    const all = C.comparePoints(st().points, ev.masses, t);
     const walk = t.mode === 'walk';
-    const rows = cmp.evals.map((e) => {
+    const rows = all.evals.filter((e) => e.hasMass).map((e) => {
       const p = App.pointById(e.pointId);
-      const ok = e.items.filter((i) => i.status === C.STATUS.OK);
-      const notes = [];
-      if (cmp.bestFull && e.pointId === cmp.bestFull.pointId) notes.push('<span class="status status--best">барлық жиынтық үшін ең тиімді</span>');
-      else if (cmp.bestAny && e.pointId === cmp.bestAny.pointId && !e.acceptsAll) notes.push('<span class="status status--warn">нәтижесі ең жоғары, бірақ бәрін қабылдамайды</span>');
-      notes.push(App.statusTag(p));
-      const accepted = [
-        ok.length ? App.listNames(ok) : '',
-        e.unpriced.length ? `<span class="unk">бағасы белгісіз: ${App.listNames(e.unpriced)}</span>` : ''
-      ].filter(Boolean).join('<br>');
-      const rejected = [
-        e.notAccepted.length ? `Қабылдамайды: ${App.listNames(e.notAccepted)}` : '',
-        e.belowMin.length ? `Партиядан аз: ${e.belowMin.map((i) => `${esc(App.matName(i.matId))} (${F.num(i.mass)} / ${F.num(i.minBatch)} кг)`).join(', ')}` : ''
-      ].filter(Boolean).join('<br>');
-      const unknownRevenue = e.revenue === 0 && e.unpriced.length;
-      return `<tr data-focus="${e.pointId}" tabindex="0"${focus && e.pointId === focus.pointId ? ' aria-selected="true"' : ''}>
-        <th scope="row">${esc(p.name)}<span class="notes">${notes.join('')}</span></th>
-        <td>${accepted || '—'}</td>
-        <td class="muted">${rejected || '—'}</td>
-        <td class="num">${unknownRevenue ? '<span class="unk">белгісіз</span>' : F.money(e.revenue)}</td>
-        <td class="num">${walk ? '—' : e.distanceKnown ? F.km(e.distanceKm) : '<span class="unk">енгізілмеген</span>'}</td>
-        <td class="num">${walk ? '—' : e.distanceKnown ? F.money(e.fuelCost) : '—'}</td>
-        <td class="num">${unknownRevenue || !e.distanceKnown ? '—' : `<b class="${App.sign(e.result)}">${F.money(e.result)}</b>`}</td>
+      const unknown = e.revenue === 0;
+      const best = all.bestFull && all.bestFull.pointId === e.pointId;
+      return `<tr${e.pointId === wiz().pointId ? ' aria-selected="true"' : ''}>
+        <th scope="row">${esc(p.name)}${best ? ' <span class="status status--best">ең тиімді</span>' : ''}</th>
+        <td class="num">${unknown ? '<span class="unk">белгісіз</span>' : F.money(e.revenue)}</td>
+        <td class="num">${walk ? '—' : e.distanceKnown ? F.money(e.fuelCost) : '<span class="unk">км жоқ</span>'}</td>
+        <td class="num">${unknown || !e.distanceKnown ? '—' : `<b class="${App.sign(e.result)}">${F.money(e.result)}</b>`}</td>
       </tr>`;
     }).join('');
-    return `<p class="hint">Шикізаттың бір бөлігін ғана қабылдайтын пункт барлық жиынтық үшін ең тиімді деп көрсетілмейді. Теріс нәтиже сол күйінде көрсетіледі. Жолды басып, пунктті «Қанша жинау керек» және «Есеп қадамдары» үшін таңдаңыз.</p>
-      <div class="scroll panel"><table class="tbl cmp">
-        <thead><tr><th>Пункт</th><th>Не қабылданады</th><th>Қабылданбайды / өткізу мүмкін емес</th><th class="num">Түсім</th><th class="num">Жүріс</th><th class="num">Жанармай</th><th class="num">Нәтиже</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
-  }
-
-  function thresholdTab(ev) {
-    const { focus, t, masses } = ev;
-    if (!focus) return '<div class="panel pad"><p class="hint">Салыстыруға пункт таңдалмаған.</p></div>';
-    const p = App.pointById(focus.pointId);
-    const adv = C.advice(focus, t.mode);
-    const warns = [];
-    for (const i of focus.unpriced) warns.push(`«${App.matName(i.matId)}»: бағасы белгісіз, түсімге қосылмады.`);
-    for (const i of focus.belowMin) warns.push(`«${App.matName(i.matId)}»: ${F.num(i.mass)} кг ең аз партиядан (${F.num(i.minBatch)} кг) аз — өткізу мүмкін емес.`);
-    for (const i of focus.notAccepted) warns.push(`«${App.matName(i.matId)}»: пункт қабылдамайды.`);
-    let scale = '';
-    if (focus.scale && t.mode !== 'walk') {
-      const paid = App.sumKg(Object.fromEntries(focus.items.filter((i) => i.status === C.STATUS.OK).map((i) => [i.matId, i.mass])));
-      scale = `<p>Пункт төлейтін материалдардың осы арақатынасында шамамен <b>${F.num(focus.scale)}</b> есе көп керек: ${F.kg(paid)} орнына шамамен <b>${F.kg(paid * focus.scale)}</b>.</p>`;
-    }
-    const rows = focus.thresholds.map((th) => {
-      const name = `<th scope="row">${esc(App.matName(th.matId))}</th>`;
-      if (th.kind === 'unknown_price') return `<tr>${name}<td class="num unk">белгісіз</td><td colspan="3" class="muted">Бағасыз шекті есептеу мүмкін емес</td></tr>`;
-      if (th.kind === 'zero_price') return `<tr>${name}<td class="num">0 ₸/кг</td><td colspan="3" class="muted">Өткізу ақшалай түсім бермейді, шек анықталмайды</td></tr>`;
-      const have = Number(masses[th.matId]) || 0;
-      return `<tr>${name}
-        <td class="num">${F.num(p.prices[th.matId])} ₸/кг</td>
-        <td class="num">${F.kg(th.mMin)}${th.byBatch > th.byFuel ? '<span class="sub">партия бойынша</span>' : ''}</td>
-        <td class="num">${F.kg(have)}</td>
-        <td class="num">${th.need <= 0 ? '<span class="pos">жеткілікті</span>' : '+' + F.kg(th.need)}</td></tr>`;
-    }).join('');
-    return `<div class="cols">
-        <div class="panel pad">
-          <div class="panel__head"><h3>Қорытынды</h3>${focusSelect(focus)}</div>
-          <p class="figure ${App.sign(focus.result)}">${F.money(focus.result)}</p>
-          <p class="hint">Түсім ${F.money(focus.revenue)} − жанармай ${F.money(focus.fuelCost)}</p>
-          <p class="verdict verdict--${adv.tone}">${App.ADVICE[adv.code]}</p>
-          ${scale}
-          ${warns.length ? `<ul class="warns">${warns.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
-        </div>
-        <div class="panel pad" id="chartCard">${chartCard(focus, t)}</div>
-      </div>
-      <div class="panel pad">
-        <div class="panel__head"><h3>Әр материал бойынша жинақтау шегі · ${esc(p.name)}</h3></div>
-        <p class="hint">Тек бір материалды өткізгенде жанармай шығынын ${t.mode === 'walk' ? '(жаяу барғанда ол жоқ, сондықтан тек ең аз партия ескеріледі)' : `(${F.money(focus.fuelCost)})`} өтеу үшін одан қанша керек. Шек: <span class="f">m<sub>min</sub> = max(C / p; партия)</span>.</p>
-        <div class="scroll"><table class="tbl"><thead><tr><th>Материал</th><th class="num">Баға</th><th class="num">m<sub>min</sub></th><th class="num">Бар</th><th class="num">Тағы керек</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="5" class="muted">Пункт материалдарды көрсетпеген</td></tr>'}</tbody></table></div>
-      </div>`;
+    return `<p class="hint">Барлық пункт бір кестеде. Қашықтығы мен бағасы белгісіз пункттердің нәтижесі есептелмейді.</p>
+      <div class="scroll"><table class="tbl cmp"><thead><tr><th>Пункт</th><th class="num">Төлейді</th><th class="num">Бензин</th><th class="num">Қалады</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
   let chartArgs = null;
-  function chartCard(focus, t) {
+  function thresholdTab(ev) {
+    const e = ev.chosen;
+    const t = ev.t;
     chartArgs = null;
-    const head = '<div class="panel__head"><h3>Нәтиженің массаға тәуелділігі</h3></div>';
-    const paid = focus.items.filter((i) => i.status === C.STATUS.OK);
+    if (!e) return '';
+    const p = App.pointById(e.pointId);
+    const rows = e.thresholds.filter((th) => wiz().mats.includes(th.matId)).map((th) => {
+      const name = `<th scope="row">${esc(App.matName(th.matId))}</th>`;
+      if (th.kind !== 'ok') return `<tr>${name}<td colspan="3" class="muted">бағасы белгісіз</td></tr>`;
+      const have = Number(ev.masses[th.matId]) || 0;
+      return `<tr>${name}<td class="num">${F.kg(th.mMin)}</td><td class="num">${F.kg(have)}</td>
+        <td class="num">${th.need <= 0 ? '<span class="pos">жеткілікті</span>' : '+' + F.kg(th.need)}</td></tr>`;
+    }).join('');
+    const paid = e.items.filter((i) => i.status === C.STATUS.OK);
     const m0 = paid.reduce((s, i) => s + i.mass, 0);
-    if (t.mode === 'walk' || !(focus.fuelCost > 0) || !(m0 > 0)) {
-      return head + `<p class="hint">${t.mode === 'walk' ? 'Жаяу барғанда жанармай шығыны жоқ, сондықтан өтелу нүктесі болмайды.' : 'График үшін бағасы белгілі материал, қашықтық және жанармай бағасы қажет.'}</p>`;
+    let chart = '';
+    if (!walk(t) && e.fuelCost > 0 && m0 > 0) {
+      chartArgs = { a: e.revenue / m0, C: e.fuelCost, m0 };
+      chart = `<ul class="legend"><li><i class="lg lg--rev"></i>Пункт төлейтін ақша</li><li><i class="lg lg--fuel"></i>Бензин шығыны</li><li><i class="lg lg--loss"></i>Залал</li></ul><div class="chart-box" id="chartBox"></div>
+        <p class="hint">Сызықтар қиылысатын жерде — сапар өзін ақтайтын масса.</p>`;
     }
-    const a = focus.revenue / m0;
-    const C0 = focus.fuelCost;
-    chartArgs = { a, C: C0, m0 };
-    const marks = [0, m0, C0 / a, Math.max(m0, C0 / a) * 1.5].sort((x, y) => x - y);
-    return head + `
-      <ul class="legend">
-        <li><i class="lg lg--rev"></i>Түсім R(m)</li>
-        <li><i class="lg lg--fuel"></i>Жанармай шығыны C</li>
-        <li><i class="lg lg--loss"></i>Залал аймағы</li>
-      </ul>
-      <div class="chart-box" id="chartBox"></div>
-      <p class="hint">Пункт төлейтін материалдардың қазіргі арақатынасы сақталады деп есептеледі (орташа баға ${F.num(a)} ₸/кг).</p>
-      <details class="data-table"><summary>Кесте түрінде</summary>
-        <table class="tbl"><thead><tr><th class="num">Масса</th><th class="num">Түсім</th><th class="num">Жанармай</th><th class="num">Нәтиже</th></tr></thead>
-        <tbody>${marks.map((m) => `<tr><td class="num">${F.kg(m)}</td><td class="num">${F.money(a * m)}</td><td class="num">${F.money(C0)}</td><td class="num">${F.money(a * m - C0)}</td></tr>`).join('')}</tbody></table>
-      </details>`;
+    return `${chart}
+      <p class="hint">Тек бір материалды өткізгенде бензинді (${F.money(e.fuelCost)}) ақтау үшін одан қанша керек · ${esc(p.name)}</p>
+      <div class="scroll"><table class="tbl"><thead><tr><th>Материал</th><th class="num">Керек</th><th class="num">Бар</th><th class="num">Тағы</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  const walk = (t) => t.mode === 'walk';
+
+  function stepsTab(ev) {
+    const e = ev.chosen;
+    const t = ev.t;
+    if (!e) return '';
+    const p = App.pointById(e.pointId);
+    const ok = e.items.filter((i) => i.status === C.STATUS.OK);
+    const rTerms = ok.map((i) => `${F.num(i.mass)} × ${F.num(i.price)}`).join(' + ') || '0';
+    const dText = t.mode === 'separate' ? `2 × ${F.num(Number(p.oneWayKm) || 0)} = ${F.km(e.distanceKm)}` : walk(t) ? '0 км' : F.km(e.distanceKm);
+    return `<ol class="steps">
+        <li><span>Пункт төлейді</span><code>R = Σ m·p = ${rTerms} = <b>${F.money(e.revenue)}</b></code></li>
+        <li><span>Қосымша жол</span><code>d = ${dText}</code></li>
+        <li><span>Бензин, литр</span><code>Q = d·c/100 = ${F.num(e.distanceKm)} × ${F.num(t.consumption)} / 100 = <b>${F.lit(e.liters)}</b></code></li>
+        <li><span>Бензин, теңге</span><code>C = Q·p<sub>ж</sub> = ${F.num(e.liters)} × ${F.num(t.fuelPrice)} = <b>${F.money(e.fuelCost)}</b></code></li>
+        <li><span>Қалады</span><code>B = R − C = <b class="${App.sign(e.result)}">${F.money(e.result)}</b></code></li>
+      </ol>`;
   }
 
   function drawChart() {
@@ -316,216 +333,146 @@
   }
   window.addEventListener('resize', drawChart);
 
-  function jointTab(ev) {
-    const { cmp, t } = ev;
-    if (!App.comparedPoints().length) return '<div class="panel pad"><p class="hint">Салыстыруға пункт таңдалмаған.</p></div>';
-    if (!App.pointById(st().joint.pointId) || !App.pointById(st().joint.pointId).inCompare) st().joint.pointId = null;
-    const best = cmp.bestFull || cmp.bestAny;
-    const point = App.pointById(st().joint.pointId) || (best && App.pointById(best.pointId)) || App.comparedPoints()[0];
-    const options = App.comparedPoints().map((p) => `<option value="${p.id}"${p.id === st().joint.pointId ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
-    const rows = st().participants.map((p) => `<label class="field field--row"><span>${esc(p.name)}</span>
-      <input type="number" min="0" step="0.1" inputmode="decimal" data-pdist="${p.id}" value="${esc(p.distanceKm ?? '')}"></label>`).join('');
-    return `<div class="panel pad"><div class="joint">
-      <div class="joint__in">
-        <p class="hint">Бірнеше жеке сапар бір ортақ сапармен салыстырылады. Ортақ сапар бір отбасының жолымен бірдей емес — шикізатты жинауға айналып өту жолы бөлек жазылады.</p>
-        <label class="field"><span>Салыстыратын пункт</span>
-          <select id="jointPoint"><option value="">Ең тиімдісі</option>${options}</select></label>
-        <div class="subgroup">
-          <p class="hint">Әр қатысушының жеке сапарындағы жүріс (бару-қайту), км</p>
-          ${rows}
-        </div>
-        <label class="field"><span>Ортақ сапар жүрісі (жинауға айналып өтуді қоса), км</span>
-          <input type="number" min="0" step="0.1" inputmode="decimal" id="jointDist" value="${esc(st().joint.distanceKm)}"></label>
-      </div>
-      <div class="joint__out" id="jointOut">${jointOut(point, t)}</div>
-    </div></div>`;
-  }
-
-  function jointOut(point, t) {
-    if (!point) return '<p class="hint">Пункт таңдалмаған.</p>';
-    const people = st().participants.map((p) => ({ name: p.name, masses: p.masses, distanceKm: Number(p.distanceKm) || 0 }));
-    const r = C.compareJoint(point, people, t, Number(st().joint.distanceKm) || 0);
-    if (!r.joint.hasMass) return '<p class="hint">2-қадамда қатысушылардың массасын енгізіңіз.</p>';
-    const s = r.separateTotal;
-    const winner = r.gain > 1e-6 ? 'joint' : r.gain < -1e-6 ? 'separate' : 'equal';
-    const col = (title, v, win) => `<div class="vs__col${win ? ' is-win' : ''}">
-        <p class="vs__title">${title}${win ? ' <span class="status status--best">тиімдірек</span>' : ''}</p>
-        <p class="figure figure--sm ${App.sign(v.result)}">${F.money(v.result)}</p>
-        <dl class="kv"><div><dt>Түсім</dt><dd>${F.money(v.revenue)}</dd></div><div><dt>Жүріс</dt><dd>${F.km(v.distanceKm)}</dd></div><div><dt>Жанармай</dt><dd>${F.money(v.fuelCost)}</dd></div></dl>
-      </div>`;
-    const verdict = {
-      joint: `Ортақ сапар ${F.money(r.gain)} тиімдірек және ${F.km(Math.max(0, s.distanceKm - r.joint.distanceKm))} жүрісті үнемдейді.`,
-      separate: `Жеке сапарлар ${F.money(-r.gain)} тиімдірек: шикізат жинауға айналып өту жолы тым ұзақ.`,
-      equal: 'Ақшалай нәтиже бойынша нұсқалар тең.'
-    }[winner];
-    return `<p class="hint">Пункт: <b>${esc(point.name)}</b>. Есеп 3-қадамдағы отын шығыны мен жанармай бағасы бойынша жүргізіледі.</p>
-      <div class="vs">${col(`Жеке сапарлар (${s.trips})`, s, winner === 'separate')}${col('Бір ортақ сапар', r.joint, winner === 'joint')}</div>
-      <p class="verdict verdict--${winner === 'joint' ? 'good' : winner === 'separate' ? 'bad' : 'neutral'}">${verdict}</p>
-      ${r.joint.revenue > s.revenue + 1e-6 ? '<p class="hint">Ортақ сапардың түсімі жоғары, себебі бірігу арқылы ең аз партияны жинауға болады.</p>' : ''}`;
-  }
-
-  function stepsTab(ev) {
-    const e = ev.focus;
-    const t = ev.t;
-    if (!e || !e.hasMass) return '<div class="panel pad"><p class="hint">Массаны енгізіңіз.</p></div>';
-    const p = App.pointById(e.pointId);
-    const ok = e.items.filter((i) => i.status === C.STATUS.OK);
-    const rTerms = ok.map((i) => `${F.num(i.mass)} кг × ${F.num(i.price)} ₸/кг`).join(' + ') || '0';
-    const dText = t.mode === 'separate' ? `2 × ${F.num(Number(p.oneWayKm) || 0)} км (бару-қайту) = ${F.km(e.distanceKm)}`
-      : t.mode === 'walk' ? '0 км (жаяу)' : `${F.km(e.distanceKm)} (жолға қосымша)`;
-    const first = ok[0];
-    const excluded = [...e.notAccepted, ...e.belowMin, ...e.unpriced];
-    return `<div class="panel pad">
-      <div class="panel__head"><h3>Есеп қадамдары · ${esc(p.name)}</h3>${focusSelect(e)}</div>
-      <ol class="steps">
-        <li><span>Түсім</span><code>R = ${rTerms} = <b>${F.money(e.revenue)}</b></code></li>
-        <li><span>Қосымша жүріс</span><code>d = ${dText}</code></li>
-        <li><span>Отын</span><code>Q = ${F.num(e.distanceKm)} × ${F.num(t.consumption)} / 100 = <b>${F.lit(e.liters)}</b></code></li>
-        <li><span>Жанармай шығыны</span><code>C = ${F.num(e.liters)} л × ${F.num(t.fuelPrice)} ₸/л = <b>${F.money(e.fuelCost)}</b></code></li>
-        <li><span>Нәтиже</span><code>B = ${F.num(e.revenue)} − ${F.num(e.fuelCost)} = <b class="${App.sign(e.result)}">${F.money(e.result)}</b></code></li>
-        ${first && t.mode !== 'walk' ? `<li><span>«${esc(App.matName(first.matId))}» шегі</span><code>m<sub>min</sub> = ${F.num(e.fuelCost)} / ${F.num(first.price)} = <b>${F.kg(e.fuelCost / first.price)}</b></code></li>` : ''}
-      </ol>
-      ${excluded.length ? `<p class="hint">Түсімге кірмеді: ${App.listNames(excluded)}.</p>` : ''}
-    </div>`;
-  }
-
   // =====================================================================
-  //  Көрсету және жаңарту
+  //  Көрсету
   // =====================================================================
   function render() {
-    const step = st().step;
-    $$('#stepper button').forEach((b) => {
-      const n = Number(b.dataset.step);
-      b.setAttribute('aria-current', n === step ? 'step' : 'false');
-      b.classList.toggle('is-done', n < step);
-    });
-    body.innerHTML = [null, step1, step2, step3, step4][step]();
+    wiz();
+    st().who = 'family';
+    let step = Math.min(STEPS, Math.max(1, Number(st().step) || 1));
+    if (step > 1 && !wiz().mats.length) step = 1;
+    st().step = step;
+    $('#progress').innerHTML = step < STEPS
+      ? `<span>${step} / 4</span><span class="bar"><i style="width:${(step / 4) * 100}%"></i></span>`
+      : '<span>Жауап</span><span class="bar"><i style="width:100%"></i></span>';
+    $('#calcIntro').hidden = step !== 1;
+    body.innerHTML = [null, q1, q2, q3, q4, answer][step]();
     $('#prevStep').hidden = step === 1;
-    $('#nextStep').hidden = step === 4;
-    $('#nextStep').textContent = step === 3 ? 'Нәтижені көру →' : 'Келесі →';
+    $('#nextStep').hidden = step === STEPS;
+    $('#nextStep').textContent = step === 4 ? 'Жауапты көру' : 'Келесі';
     if (step === 2) updateMass();
-    if (step === 3) updateCarErrors();
-    if (step === 4) drawChart();
+    if (step === STEPS) drawChart();
+    updateNext();
+  }
+
+  function updateNext() {
+    const step = st().step;
+    const b = $('#nextStep');
+    b.disabled = step === 1 && !wiz().mats.length;
   }
 
   function updateMass() {
     const errs = App.inputErrors().filter((e) => e.kind === 'mass');
-    $$('[data-mass]').forEach((el) => el.classList.remove('invalid'));
-    for (const e of errs) {
-      const el = $(`[data-mass="${e.pid}"][data-mat="${e.mid}"]`);
-      if (el) el.classList.add('invalid');
-    }
+    $$('[data-kg]').forEach((el) => el.classList.toggle('invalid', errs.some((e) => e.mid === el.dataset.kg)));
     $('#massError').hidden = !errs.length;
     $('#massError').textContent = errs.map((e) => e.text).join('; ');
-    const masses = App.totalMasses();
-    $('#massTotal').textContent = F.kg(App.sumKg(masses));
-    for (const m of st().materials) {
-      const cell = $(`[data-total="${m.id}"]`);
-      if (cell) cell.textContent = masses[m.id] ? F.num(masses[m.id]) : '—';
-    }
+    $('#massTotal').textContent = F.kg(App.sumKg(App.totalMasses()));
     return errs;
   }
 
-  function updateCarErrors() {
-    const errs = App.inputErrors().filter((e) => e.kind !== 'mass');
-    $('#carError').hidden = !errs.length;
-    $('#carError').textContent = errs.map((e) => e.text).join('; ');
+  function validate(step) {
+    if (step === 2) {
+      if (updateMass().length) return false;
+      if (!(App.sumKg(App.totalMasses()) > 0)) { showErr('#massError', 'Кемінде бір материалдың массасын жазыңыз.'); return false; }
+    }
+    if (step === 4) {
+      const p = chosenPoint();
+      if (!p) { showErr('#q4Error', 'Пунктті таңдаңыз.'); return false; }
+      if (car()) {
+        if (p[kmKey()] === '' || p[kmKey()] == null) { showErr('#q4Error', 'Пунктке дейін қанша км екенін жазыңыз. Білмесеңіз, «Google Maps-та қашықтықты көру» батырмасын басыңыз.'); return false; }
+        if (st().transport.fuelPrice === '') { showErr('#q4Error', '1 литр бензиннің бағасын жазыңыз (жанармай құю бекетінің таблосында).'); return false; }
+        const bad = App.inputErrors().filter((e) => e.kind !== 'mass');
+        if (bad.length) { showErr('#q4Error', bad.map((e) => e.text).join('; ')); return false; }
+      }
+    }
+    return true;
   }
 
-  function refreshTab() {
-    const tab = $('#tabBody');
-    if (!tab) return render();
-    tab.innerHTML = tabBody(App.evaluate());
-    drawChart();
+  function showErr(sel, text) {
+    const el = $(sel);
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = text;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function setStep(n) {
-    if (st().step === 2 && n > 2 && updateMass().length) return;
-    st().step = Math.min(4, Math.max(1, n));
+  function go(n) {
+    if (n > st().step && !validate(st().step)) return;
+    st().step = n;
     App.save();
     render();
-    root.scrollIntoView({ block: 'start' });
-  }
-
-  function relabel() {
-    const unit = App.WHO[st().who].unit;
-    st().participants.forEach((p, i) => {
-      if (/^\d+-(отбасы|қатысушы)$/.test(p.name)) p.name = `${i + 1}-${unit}`;
-    });
+    window.scrollTo(0, 0);
   }
 
   // ---------- оқиғалар ----------
   root.addEventListener('input', (ev) => {
     const el = ev.target;
     const d = el.dataset;
-    const byId = (list, id) => list.find((x) => x.id === id);
-    if (d.mass) { byId(st().participants, d.mass).masses[d.mat] = el.value; updateMass(); }
-    else if (d.pname) byId(st().participants, d.pname).name = el.value;
-    else if (d.dist) { App.pointById(d.dist)[d.key] = el.value; updateCarErrors(); }
-    else if (el.id === 'collectDays') { st().model = Object.assign(st().model || {}, { days: el.value }); }
-    else if (el.id === 'consumption' || el.id === 'fuelPrice') { st().transport[el.id] = el.value; updateCarErrors(); }
-    else if (d.pdist) { byId(st().participants, d.pdist).distanceKm = el.value; refreshJoint(); }
-    else if (el.id === 'jointDist') { st().joint.distanceKm = el.value; refreshJoint(); }
+    if (d.kg) { masses()[d.kg] = el.value; updateMass(); }
+    else if (d.count) {
+      const kg = (Number(el.value) || 0) * COUNTERS[d.count].kg;
+      $(`[data-count-out="${d.count}"]`).textContent = F.kg(kg);
+    }
+    else if (el.id === 'collectDays') st().model = Object.assign(st().model || {}, { days: el.value });
+    else if (d.km) App.pointById(d.km)[d.key] = el.value;
+    else if (el.id === 'consumption' || el.id === 'fuelPrice') st().transport[el.id] = el.value;
     else return;
+    if (!$('#q4Error') || d.km || el.id === 'fuelPrice') { const e = $('#q4Error'); if (e) e.hidden = true; }
     App.save();
   });
-
-  function refreshJoint() {
-    const ev = App.evaluate();
-    const best = ev.cmp.bestFull || ev.cmp.bestAny;
-    const point = App.pointById(st().joint.pointId) || (best && App.pointById(best.pointId)) || App.comparedPoints()[0];
-    const out = $('#jointOut');
-    if (out) out.innerHTML = jointOut(point, ev.t);
-  }
 
   root.addEventListener('change', (ev) => {
     const el = ev.target;
-    if (el.matches('[data-focus-select]')) { st().focusId = el.value; refreshTab(); }
-    else if (el.id === 'jointPoint') { st().joint.pointId = el.value || null; refreshJoint(); }
-    else if (el.dataset.include) {
-      App.pointById(el.dataset.include).inCompare = el.checked;
-      el.closest('.pick').classList.toggle('is-on', el.checked);
-    } else return;
-    App.save();
+    if (el.dataset.place) { wiz().pointId = el.dataset.place; App.save(); render(); }
   });
 
   root.addEventListener('click', (ev) => {
-    const el = ev.target.closest('button, tr[data-focus], a[data-mapgo]');
+    const el = ev.target.closest('button');
     if (!el) return;
     const d = el.dataset;
-    if (d.step) setStep(Number(d.step));
-    else if (el.id === 'prevStep') setStep(st().step - 1);
-    else if (el.id === 'nextStep') setStep(st().step + 1);
-    else if (d.who) { st().who = d.who; relabel(); App.save(); render(); }
-    else if (d.mode) { st().transport.mode = d.mode; App.save(); render(); }
-    else if (d.delp) { st().participants = st().participants.filter((p) => p.id !== d.delp); App.save(); render(); }
-    else if (el.id === 'addParticipant') {
-      const n = st().participants.length + 1;
-      st().participants.push({ id: App.S.uid(), name: `${n}-${App.WHO[st().who].unit}`, masses: {}, distanceKm: '' });
-      App.save(); render();
-    }
-    else if (d.tab) { st().resultTab = d.tab; App.save(); render(); }
-    else if (d.focus) { st().focusId = d.focus; App.save(); refreshTab(); }
-    else if (d.route) App.go('map', { mapPointId: d.route });
-    else if (d.mapgo) { ev.preventDefault(); App.go('map', { mapPointId: d.mapgo }); }
-    else if (el.id === 'toJournal') { if (App.addJournalRecord()) App.toast('Болжам журналға жазылды', '#/notes', 'Журналды ашу'); }
-    else if (el.id === 'printBtn') window.print();
+    if (d.matToggle) {
+      const list = wiz().mats;
+      const i = list.indexOf(d.matToggle);
+      if (i >= 0) { list.splice(i, 1); delete masses()[d.matToggle]; } else list.push(d.matToggle);
+      el.setAttribute('aria-pressed', String(i < 0));
+      App.save();
+      updateNext();
+    } else if (d.bump) {
+      const v = Math.max(0, (Number(masses()[d.bump]) || 0) + Number(d.delta));
+      masses()[d.bump] = String(Math.round(v * 10) / 10);
+      $(`[data-kg="${d.bump}"]`).value = masses()[d.bump];
+      App.save();
+      updateMass();
+    } else if (d.countAdd) {
+      const input = $(`[data-count="${d.countAdd}"]`);
+      const kg = (Number(input.value) || 0) * COUNTERS[d.countAdd].kg;
+      if (kg > 0) {
+        masses()[d.countAdd] = String(Math.round(((Number(masses()[d.countAdd]) || 0) + kg) * 100) / 100);
+        $(`[data-kg="${d.countAdd}"]`).value = masses()[d.countAdd];
+        input.value = '';
+        $(`[data-count-out="${d.countAdd}"]`).textContent = '0 кг';
+        App.save();
+        updateMass();
+      }
+    } else if (d.mode) {
+      st().transport.mode = d.mode;
+      App.save();
+      go(4); // таңдау жасалды — бірден келесі сұрақ
+    } else if (d.tab) {
+      st().resultTab = d.tab;
+      App.save();
+      $$('[data-tab]', root).forEach((b) => b.setAttribute('aria-selected', String(b === el)));
+      $('#tabBody').innerHTML = tabBody(App.evaluate());
+      drawChart();
+    } else if (el.id === 'prevStep') go(st().step - 1);
+    else if (el.id === 'nextStep') go(st().step + 1);
+    else if (el.id === 'restart') go(1);
+    else if (el.id === 'toJournal') { if (App.addJournalRecord()) App.toast('Болжам журналға жазылды', '#/notes', 'Ашу'); }
   });
 
-  root.addEventListener('keydown', (ev) => {
-    const tr = ev.target.closest && ev.target.closest('tr[data-focus]');
-    if (tr && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); st().focusId = tr.dataset.focus; refreshTab(); }
-  });
+  root.addEventListener('toggle', (ev) => {
+    if (ev.target.id === 'detailsBox') { wiz().details = ev.target.open; App.save(); if (ev.target.open) drawChart(); }
+  }, true);
 
-  root.addEventListener('submit', (ev) => {
-    if (ev.target.id !== 'addMatForm') return;
-    ev.preventDefault();
-    const name = ev.target.mat.value.trim();
-    if (!name) return;
-    st().materials.push({ id: 'm_' + App.S.uid(), name, hint: '' });
-    App.save();
-    render();
-  });
-
-  App.views.calc = { title: 'Калькулятор', render };
+  App.views.calc = { title: 'Есептеу', render };
 })();

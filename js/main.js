@@ -1,30 +1,26 @@
-/* Бөлімдер арасында ауысу (hash-маршрутизация), бүйірлік мәзір және хабарламалар */
+/* Бөлімдер арасында ауысу (hash-маршрутизация) және хабарламалар */
 (function () {
   'use strict';
   const App = window.App;
   const { $, $$ } = App;
-  const side = $('#sidebar');
-  const scrim = $('#scrim');
-  const menuBtn = $('#menuBtn');
-
-  function setMenu(open) {
-    side.classList.toggle('is-open', open);
-    scrim.hidden = !open;
-    menuBtn.setAttribute('aria-expanded', String(open));
-  }
+  // «Ғылым» мәзір тармағына жататын беттер
+  const SCIENCE = ['model', 'joint', 'notes', 'method'];
 
   function route() {
     const name = (location.hash.match(/^#\/(\w+)/) || [])[1];
     const view = App.views[name] ? name : 'calc';
+    const group = SCIENCE.includes(view) ? 'science' : view;
     $$('.view').forEach((v) => { v.hidden = v.dataset.view !== view; });
     $$('[data-nav]').forEach((a) => {
-      if (a.dataset.nav === view) a.setAttribute('aria-current', 'page');
+      if (a.dataset.nav === group) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
-    $('#topTitle').textContent = App.views[view].title;
+    $$('[data-sub]').forEach((a) => {
+      if (a.dataset.sub === view) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
     document.title = `${App.views[view].title} — EcoEsep`;
     App.views[view].render();
-    setMenu(false);
     window.scrollTo(0, 0);
   }
 
@@ -43,15 +39,11 @@
     App.toast.timer = setTimeout(() => box.classList.remove('is-on'), 3500);
   };
 
-  // Пункт редакторы сақталғанда ағымдағы бөлімді жаңарту
+  // Пункт редакторы жабылғанда калькуляторды жаңарту
   $('#pointDlg').addEventListener('close', () => {
     const name = (location.hash.match(/^#\/(\w+)/) || [])[1] || 'calc';
     if (name === 'calc' && App.views.calc) App.views.calc.render();
   });
-
-  menuBtn.addEventListener('click', () => setMenu(!side.classList.contains('is-open')));
-  scrim.addEventListener('click', () => setMenu(false));
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') setMenu(false); });
 
   const p = App.D.project || {};
   $('#projectMeta').innerHTML = [

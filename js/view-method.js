@@ -22,5 +22,4 @@
   }
 
   App.views.method = { title: 'Әдістеме', render };
-  App.views.help = { title: 'Нұсқаулық', render() {} };
 })();
