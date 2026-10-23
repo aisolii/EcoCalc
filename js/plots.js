@@ -34,10 +34,10 @@
    * series: [{ x: [], y: [], cls, label }]; hlines/vlines: [{ v, label, cls }]; marks: [{ x, y, label, cls }]
    * tip(x) — тінтуір астындағы x үшін HTML
    */
-  function line(box, { series, xLabel, yLabel, hlines = [], vlines = [], marks = [], tip, yMin, yMax, xMax, H = 280, aria }) {
+  function line(box, { series, xLabel, yLabel, hlines = [], vlines = [], marks = [], bands = [], tip, yMin, yMax, xMax, H = 280, aria, xFmt }) {
     const f = frame(box, H);
     const xs = series.flatMap((s) => s.x);
-    const ys = series.flatMap((s) => s.y).concat(hlines.map((h) => h.v), marks.map((m) => m.y));
+    const ys = series.flatMap((s) => s.y).concat(hlines.map((h) => h.v), marks.map((m) => m.y), bands.flatMap((b) => b.hi));
     const x1 = xMax ?? Math.max(...xs);
     let lo = yMin ?? Math.min(0, ...ys);
     let hi = yMax ?? Math.max(...ys);
@@ -55,7 +55,12 @@
       el('text', { x: f.pad.l - 8, y: Y(v) + 4, 'text-anchor': 'end', class: 'chart__tick' }, grid).textContent = F.num(v, Math.abs(hi - lo) < 5 ? 1 : 0);
     }
     for (const v of ticks(0, x1, 6)) {
-      el('text', { x: X(v), y: H - f.pad.b + 18, 'text-anchor': 'middle', class: 'chart__tick' }, grid).textContent = F.num(v, 1);
+      el('text', { x: X(v), y: H - f.pad.b + 18, 'text-anchor': 'middle', class: 'chart__tick' }, grid).textContent = xFmt ? xFmt(v) : F.num(v, 1);
+    }
+    for (const b of bands) {
+      const top = b.x.map((x, i) => `${X(x).toFixed(1)},${Y(b.hi[i]).toFixed(1)}`);
+      const bot = b.x.map((x, i) => `${X(x).toFixed(1)},${Y(b.lo[i]).toFixed(1)}`).reverse();
+      el('polygon', { points: top.concat(bot).join(' '), class: b.cls || 'chart__band' }, svg);
     }
     if (lo < 0 && hi > 0) el('line', { x1: f.pad.l, x2: f.W - f.pad.r, y1: Y(0), y2: Y(0), class: 'chart__axis' }, svg);
     else el('line', { x1: f.pad.l, x2: f.W - f.pad.r, y1: Y(lo), y2: Y(lo), class: 'chart__axis' }, svg);
@@ -68,6 +73,7 @@
     }
     for (const v of vlines) {
       el('line', { x1: X(v.v), x2: X(v.v), y1: f.pad.t, y2: f.pad.t + f.ih, class: v.cls || 'chart__guide' }, svg);
+      if (v.label) el('text', { x: X(v.v) - 4, y: f.pad.t + 12, 'text-anchor': 'end', class: 'chart__note' }, svg).textContent = v.label;
     }
     for (const s of series) {
       const d = s.x.map((x, i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(s.y[i]).toFixed(1)}`).join('');
@@ -114,7 +120,7 @@
   }
 
   /** Гистограмма: bins [{x0, x1, count}]; нөлден кіші бағандар залал аймағында. */
-  function histogram(box, { bins, n, xLabel, marks = [], H = 260, aria }) {
+  function histogram(box, { bins, n, xLabel, marks = [], H = 260, aria, fmt = F.money, zeroSplit = true }) {
     const f = frame(box, H);
     const lo = bins[0].x0, hi = bins[bins.length - 1].x1;
     const maxC = Math.max(...bins.map((b) => b.count));
@@ -128,9 +134,9 @@
       el('text', { x: f.pad.l - 8, y: Y(c) + 4, 'text-anchor': 'end', class: 'chart__tick' }, grid).textContent = F.num(v, 1) + '%';
     }
     for (const v of ticks(lo, hi, 6)) {
-      el('text', { x: X(v), y: H - f.pad.b + 18, 'text-anchor': 'middle', class: 'chart__tick' }, grid).textContent = F.num(v, 0);
+      el('text', { x: X(v), y: H - f.pad.b + 18, 'text-anchor': 'middle', class: 'chart__tick' }, grid).textContent = F.num(v, hi - lo < 5 ? 2 : 0);
     }
-    if (lo < 0 && hi > 0) el('rect', { x: f.pad.l, y: f.pad.t, width: X(0) - f.pad.l, height: f.ih, class: 'chart__loss' }, svg);
+    if (zeroSplit && lo < 0 && hi > 0) el('rect', { x: f.pad.l, y: f.pad.t, width: X(0) - f.pad.l, height: f.ih, class: 'chart__loss' }, svg);
     const tipBox = document.createElement('div');
     tipBox.className = 'chart__tip';
     tipBox.hidden = true;
@@ -140,7 +146,7 @@
       const rect = el('rect', { x: X(b.x0) + 1, y: Y(b.count), width: w, height: Math.max(0, f.pad.t + f.ih - Y(b.count)), rx: 2, class: 'chart__bar' }, svg);
       const show = () => {
         tipBox.hidden = false;
-        tipBox.innerHTML = `<b>${F.money(b.x0)} … ${F.money(b.x1)}</b><span>Үлесі</span><span>${F.pct((b.count / n) * 100)}</span>`;
+        tipBox.innerHTML = `<b>${fmt(b.x0)} … ${fmt(b.x1)}</b><span>Үлесі</span><span>${F.pct((b.count / n) * 100)}</span>`;
         const r = svg.getBoundingClientRect();
         tipBox.style.left = Math.min(r.width - 180, (X(b.x1) / f.W) * r.width + 8) + 'px';
       };
@@ -149,7 +155,7 @@
       rect.addEventListener('pointerleave', () => { tipBox.hidden = true; });
     }
     el('line', { x1: f.pad.l, x2: f.W - f.pad.r, y1: f.pad.t + f.ih, y2: f.pad.t + f.ih, class: 'chart__axis' }, svg);
-    if (lo < 0 && hi > 0) {
+    if (zeroSplit && lo < 0 && hi > 0) {
       el('line', { x1: X(0), x2: X(0), y1: f.pad.t, y2: f.pad.t + f.ih, class: 'chart__zero' }, svg);
       el('text', { x: X(0) - 6, y: f.pad.t + 12, 'text-anchor': 'end', class: 'chart__note' }, svg).textContent = 'залал';
       el('text', { x: X(0) + 6, y: f.pad.t + 12, class: 'chart__note' }, svg).textContent = 'пайда';

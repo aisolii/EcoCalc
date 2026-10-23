@@ -53,6 +53,7 @@
     if (Number(m.gManual) > 0) { g = Number(m.gManual); gSrc = 'manual'; }
     else if (diary.fit && diary.pts.length >= 3 && diary.fit.slope > 0) { g = diary.fit.slope; gSrc = 'diary'; }
     else if (Number(m.days) > 0 && ev.total > 0) { g = ev.total / Number(m.days); gSrc = 'days'; }
+    else if (App.campAnalysis && App.campAnalysis() && App.campAnalysis().rateCI) { g = App.campAnalysis().rateCI.mean; gSrc = 'campaign'; }
     const cap = Number(m.capacity) > 0 ? Number(m.capacity) : Infinity;
     const pbar = best && ev.total > 0 ? best.revenue / ev.total : null;
     const C = best ? best.fuelCost : null;
@@ -469,6 +470,7 @@
       manual: 'қолмен енгізілген',
       diary: 'жинау күнделігі бойынша (регрессия)',
       days: `калькулятордан: ${F.kg(ctx.ev.total)} / ${ctx.m.days} күн`,
+      campaign: 'сынып деректері бойынша: бір отбасының орташа жылдамдығы',
       none: 'белгісіз — «неше күнде жиналды» өрісін толтырыңыз'
     }[ctx.gSrc];
   }

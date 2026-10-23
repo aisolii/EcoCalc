@@ -474,5 +474,5 @@
     if (ev.target.id === 'detailsBox') { wiz().details = ev.target.open; App.save(); if (ev.target.open) drawChart(); }
   }, true);
 
-  App.views.calc = { title: 'Есептеу', render };
+  App.views.calc = { title: 'Отбасы калькуляторы', render };
 })();

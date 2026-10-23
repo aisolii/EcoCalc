@@ -19,19 +19,19 @@
         <span><b>EcoEsep</b><small>Көкшетау · қайталама шикізат</small></span>
       </a>
       <nav class="side__nav" aria-label="Бөлімдер">
-        <a href="#/calc" data-nav="calc">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M8 18h2M12 18h2M16 11v7"/></svg>
-          <span>Есептеу</span>
+        <a href="#/dash" data-nav="dash">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>
+          <span>Панель</span>
         </a>
-        <a href="#/map" data-nav="map">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 1 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
-          <span>Карта</span>
+        <a href="#/data" data-nav="data">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 16V9M10 16V5M14 16v-6M18 16V8"/></svg>
+          <span>Деректер</span>
         </a>
-        <a href="#/prices" data-nav="prices">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7l9 9-7 7-9-9z"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
-          <span>Бағалар</span>
+        <a href="#/plan" data-nav="plan">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h3M8 17h6"/></svg>
+          <span>Жоспар</span>
         </a>
-        <a href="#/model" data-nav="science">
+        <a href="#/analysis" data-nav="science">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c3-9 5-13 8-13s4 6 8 6"/><path d="M4 5v14h16"/></svg>
           <span>Ғылым</span>
         </a>
@@ -40,8 +40,15 @@
     </aside>
 
     <main class="main" id="main">
+      <nav class="subnav" id="subnav" aria-label="Бөлім ішіндегі беттер"></nav>
+
+      <section class="view" data-view="dash" aria-label="Панель"><div id="dashBody"></div></section>
+      <section class="view" data-view="data" aria-label="Деректер" hidden><div id="dataBody"></div></section>
+      <section class="view" data-view="plan" aria-label="Жинау күні" hidden><div id="planBody"></div></section>
+      <section class="view" data-view="route" aria-label="Маршрут" hidden><div id="routeBody"></div></section>
+      <section class="view" data-view="analysis" aria-label="Талдау" hidden><div id="analysisBody"></div></section>
       <!-- ============ КАЛЬКУЛЯТОР ============ -->
-      <section class="view" data-view="calc" aria-label="Есептеу">
+      <section class="view" data-view="calc" aria-label="Отбасы калькуляторы" hidden>
         <div class="intro-card" id="calcIntro">
           <p class="intro-card__brand">EcoEsep · Көкшетау</p>
           <h1>Шикізатты өткізу тиімді ме?</h1>
@@ -57,12 +64,6 @@
 
       <!-- ============ МАТЕМАТИКАЛЫҚ МОДЕЛЬ ============ -->
       <section class="view" data-view="model" aria-labelledby="modelTitle" hidden>
-        <nav class="subnav" aria-label="Ғылыми бөлім">
-          <a href="#/model" data-sub="model">Математикалық модель</a>
-          <a href="#/joint" data-sub="joint">Бірлесіп өткізу</a>
-          <a href="#/notes" data-sub="notes">Журнал мен жазбалар</a>
-          <a href="#/method" data-sub="method">Әдістеме</a>
-        </nav>
         <header class="page-head">
           <h1 id="modelTitle">Математикалық модель</h1>
           <p>Бес сұрақ — бес математикалық әдіс. Әр бөлімде алдымен жауап қарапайым тілмен жазылған, одан кейін график, ал «Математикасы» батырмасының астында — формулалар. Деректер «Есептеу» бөлімінен өзі алынады.</p>
@@ -70,21 +71,6 @@
         <div class="panel pad" id="modelParams"></div>
         <div class="mtabs" role="tablist" id="modelTabs"></div>
         <div id="modelBody"></div>
-      </section>
-
-      <!-- ============ БІРЛЕСУ ============ -->
-      <section class="view" data-view="joint" aria-labelledby="jointTitle" hidden>
-        <nav class="subnav" aria-label="Ғылыми бөлім">
-          <a href="#/model" data-sub="model">Математикалық модель</a>
-          <a href="#/joint" data-sub="joint">Бірлесіп өткізу</a>
-          <a href="#/notes" data-sub="notes">Журнал мен жазбалар</a>
-          <a href="#/method" data-sub="method">Әдістеме</a>
-        </nav>
-        <header class="page-head">
-          <h1 id="jointTitle">Бірлесіп өткізу</h1>
-          <p>Бірнеше отбасы немесе сынып шикізатты бір көлікпен апарса, тиімдірек пе? Әр отбасының массасын және өз сапарының жолын жазыңыз.</p>
-        </header>
-        <div id="jointBody"></div>
       </section>
 
       <!-- ============ КАРТА ============ -->
@@ -135,12 +121,6 @@
 
       <!-- ============ ЖАЗБАЛАР ============ -->
       <section class="view" data-view="notes" aria-labelledby="notesTitle" hidden>
-        <nav class="subnav" aria-label="Ғылыми бөлім">
-          <a href="#/model" data-sub="model">Математикалық модель</a>
-          <a href="#/joint" data-sub="joint">Бірлесіп өткізу</a>
-          <a href="#/notes" data-sub="notes">Журнал мен жазбалар</a>
-          <a href="#/method" data-sub="method">Әдістеме</a>
-        </nav>
         <header class="page-head">
           <h1 id="notesTitle">Жазбалар мен журнал</h1>
           <p>Пункттерге қоңырау, бақылау және ойларыңызды осында жазыңыз. Төменде — калькулятор болжамын нақты төлеммен салыстыратын тексеру журналы.</p>
@@ -169,12 +149,6 @@
 
       <!-- ============ ӘДІСТЕМЕ ============ -->
       <section class="view" data-view="method" aria-labelledby="methodTitle" hidden>
-        <nav class="subnav" aria-label="Ғылыми бөлім">
-          <a href="#/model" data-sub="model">Математикалық модель</a>
-          <a href="#/joint" data-sub="joint">Бірлесіп өткізу</a>
-          <a href="#/notes" data-sub="notes">Журнал мен жазбалар</a>
-          <a href="#/method" data-sub="method">Әдістеме</a>
-        </nav>
         <header class="page-head">
           <h1 id="methodTitle">Есептеу әдістемесі</h1>
           <p><b>Мақсаты:</b> отбасына немесе мектеп сыныбына шикізаттың массасын, қабылдау бағасын және жанармай шығынын ескере отырып, қайталама шикізатты өткізу нұсқасын таңдауға көмектесу.</p>
@@ -206,7 +180,10 @@
           </div>
         </div>
         <div class="panel pad">
-          <h2 class="h3">Математикалық модель</h2>
+          <h2 class="h3">Мектеп акциясының әдістері</h2>
+          <p>(1) Әр отбасының жиналу жылдамдығы — ең кіші квадраттар әдісі, сенім аралықтары, бутстрэп; (2) сынып болжамы және болжам аралығы; (3) hold-out тексеру; (4) сатылы баға мен көлік сыйымдылығы бар жинау күнін оңтайландыру; (5) гаверсинус, жол коэффициентін калибрлеу және коммивояжер есебін Хелд–Карп әдісімен дәл шешу.</p>
+          <div class="actions"><a class="btn btn--primary" href="#/analysis">Деректер талдауы</a><a class="btn" href="#/route">Маршрут</a></div>
+          <h2 class="h3 mt">Математикалық модель</h2>
           <p>Калькулятордың формулалары бір сапарды сипаттайды. Толық модель бес әдісті біріктіреді: (1) жинақталудың дифференциалдық теңдеуі dm/dt = g(1 − m/M) және Рунге–Кутта әдісі; (2) өткізу аралығын оңтайландыру J(T) → max; (3) Монте-Карло әдісімен ақталу ықтималдығы мен сезімталдық талдауы; (4) ең кіші квадраттар әдісімен болжам; (5) материалдарды пункттерге бөлудің дискретті оңтайландыруы.</p>
           <div class="actions"><a class="btn btn--primary" href="#/model">Модельді ашу</a></div>
         </div>
@@ -219,7 +196,7 @@
             <li><a href="https://2gis.kz/kokshetau/firm/70000001034624912" target="_blank" rel="noopener">2ГИС — LS Kokshetau карточкасы</a></li>
             <li><a href="https://koshketau.spravker.ru/priemnyie-punktyi-steklotaryi/" target="_blank" rel="noopener">spravker.ru — Көкшетаудағы қабылдау пункттері</a></li>
           </ul>
-          <p class="hint">Мәліметтер 22.10.2026 жиналды. Есептеулер 27 автоматты тестпен тексерілген (tests/calc.test.js, tests/model.test.js, docs/tests.md).</p>
+          <p class="hint">Мәліметтер 22.10.2026 жиналды. Есептеулер 36 автоматты тестпен тексерілген (tests/*.test.js, docs/tests.md).</p>
         </div>
       </section>
 
@@ -264,19 +241,25 @@
 
   <script src="js/calc.js"></script>
   <script src="js/model.js"></script>
+  <script src="js/campaign.js"></script>
   <script src="js/data.js"></script>
   <script src="js/format.js"></script>
   <script src="js/store.js"></script>
   <script src="js/chart.js"></script>
   <script src="js/plots.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/app-campaign.js"></script>
   <script src="js/view-calc.js"></script>
   <script src="js/view-map.js"></script>
   <script src="js/view-prices.js"></script>
   <script src="js/view-notes.js"></script>
   <script src="js/view-method.js"></script>
   <script src="js/view-model.js"></script>
-  <script src="js/view-joint.js"></script>
+  <script src="js/view-dash.js"></script>
+  <script src="js/view-data.js"></script>
+  <script src="js/view-plan.js"></script>
+  <script src="js/view-route.js"></script>
+  <script src="js/view-analysis.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

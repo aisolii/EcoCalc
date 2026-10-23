@@ -677,3 +677,57 @@ table { border-collapse: collapse; width: 100%; }
   .place .chips, .place > .hint, .km-box { margin-left: 0; }
   .verdict-card { padding: 18px; }
 }
+
+/* ---------- мектеп акциясы ---------- */
+.demo-banner { margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); border: 1px dashed var(--warn); color: var(--warn); font-size: 14px; }
+.demo-banner .link { color: var(--warn); margin-left: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.kpi { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.kpi span { font-size: 13px; color: var(--ink-3); }
+.kpi b { font-size: clamp(20px, 3.6vw, 28px); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.kpi small { font-size: 12px; color: var(--ink-3); }
+.facts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 16px; }
+.fact { display: grid; gap: 3px; align-content: start; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; color: inherit; text-decoration: none; }
+.fact:hover { border-color: var(--accent); }
+.fact span { font-size: 13px; color: var(--ink-3); }
+.fact b { font-size: 18px; font-weight: 600; }
+.fact small { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+.verdict-card + .facts-grid, .kpis + .verdict-card { margin-top: 0; }
+.chart__band { fill: color-mix(in srgb, var(--accent) 14%, transparent); }
+.lg--band { height: 10px; border: 0; background: color-mix(in srgb, var(--accent) 18%, transparent); vertical-align: -1px; }
+.entry-form { max-width: 760px; }
+.mat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 14px; margin: 14px 0; }
+.mat-grid input, .entry-form .pair input, .entry-form select { min-height: 46px; font-size: 17px; }
+.import { margin-top: 16px; }
+.import summary, .panel > summary { cursor: pointer; }
+.import .limits { margin-top: 12px; }
+.qlist { margin: 6px 0; padding-left: 18px; font-family: var(--mono); font-size: 13px; }
+.url-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin-top: 12px; }
+.mt { margin-top: 18px; }
+.tier-in { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--paper); font-family: var(--mono); font-size: 14px; }
+.spots { display: grid; gap: 8px; }
+.spot { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; padding: 10px 12px; background: var(--bg); border-radius: 8px; }
+.spot__n { font-size: 13px; color: var(--ink-3); padding-bottom: 10px; white-space: nowrap; }
+.calib { display: grid; gap: 8px; margin-top: 10px; }
+.calib__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.calib__row select, .calib__row input { min-height: 38px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--paper); padding: 0 8px; }
+.calib__row input { width: 90px; }
+.field--inline-k { display: inline-grid; grid-template-columns: auto 100px; align-items: center; gap: 8px; }
+.route-map { min-height: 300px; }
+.route-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 8 5; }
+.route-pt circle { fill: var(--paper); stroke: var(--accent); stroke-width: 2.5; }
+.route-pt--start circle, .route-pt--end circle { fill: var(--ink); stroke: var(--paper); }
+.route-pt text { font: 600 12px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3px; }
+.route-pt--spot text { fill: var(--accent); stroke: none; }
+#subnav:empty { display: none; }
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .facts-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .spot { grid-template-columns: 1fr auto; }
+  .spot .field:nth-child(2) { grid-column: 1; }
+  .url-row { grid-template-columns: 1fr; }
+}
+
+.tip-line { max-width: 760px; margin: 10px 0 0; padding: 12px 14px; background: var(--accent-soft); border-radius: 10px; font-size: 15px; }
